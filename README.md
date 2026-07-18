@@ -97,10 +97,24 @@ npx expo start
 The judge-facing flow is ready: **paste syllabus → AI audit → SRI → explainable modernization actions**.
 
 1. Copy `backend/.env.example` to `backend/.env` and add `OPENAI_API_KEY`. The API operates in a deterministic demo mode without it, so the live experience still works reliably.
-2. To persist history, run `backend/supabase-schema.sql` in the Supabase SQL editor and add the Supabase credentials to `backend/.env`.
+2. To persist history, run the SQL files in `backend/migrations/` (in order, `0000_...` then `0001_...`) in the Supabase SQL editor and add the Supabase credentials to `backend/.env`.
 3. When using a physical phone, point the Expo app at the computer running the API, for example: `EXPO_PUBLIC_API_URL=http://192.168.1.5:5000 npx expo start`. The default targets the local machine.
 
 `POST /api/audit/analyze` accepts `title`, `gradeLevel`, `syllabusText`, and optional `alpha`, returning the SRI, subject-level risk, rationale, and prioritized next actions.
+
+### Full platform setup (institutions, auth, roster)
+
+Beyond the standalone audit demo above, the app is growing into the full ZivaDzidzo platform (see the build plan for the phased roadmap). To bring up the full schema and sign-in flow:
+
+1. Run **both** migration files in `backend/migrations/` against your Supabase project, in order.
+2. Add `SUPABASE_SERVICE_ROLE_KEY` to `backend/.env` (from your Supabase project's API settings — never commit this, never send it to the frontend).
+3. Seed one institution, 3 departments, 5 subjects, and ~15 teachers: `cd backend && npm run seed`.
+4. Copy `frontend/.env.example` to `frontend/.env` and set `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (the anon/public key only). Without these, the app skips the sign-in gate and only the Home (curriculum audit) tab is meaningfully usable.
+5. Start the backend and run `npx expo start` in `frontend/` — sign up a user from the in-app Auth screen; the backend auto-provisions their profile onto the seeded institution via `POST /auth/session-sync`.
+
+The app currently has 7 tabs: **Home** (curriculum audit, fully working), **Roster**, **My School**, **Chat**, **Reports**, **Cost**, and **Settings** (profile + sign out). Roster/My School/Chat/Reports/Cost are placeholders until their respective build phases land.
+
+> **Note:** `nativewind@2` requires `tailwindcss@3.3.x`. A newer `tailwindcss` (3.4+) will break the Metro bundle at `App.js` with `Use process(css).then(cb) to work with async plugins` — `frontend/package.json` pins `tailwindcss` to `3.3.2` deliberately; don't bump it without re-testing a full bundle.
 
 <br>
 
