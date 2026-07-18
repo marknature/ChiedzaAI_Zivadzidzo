@@ -2,7 +2,7 @@
 // app is demo-able immediately after the schema is applied. Uses the service-role
 // client because there is no authenticated user in a seed context (RLS would block an
 // anon insert here, correctly).
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const { supabaseAdmin } = require('./db');
 
 const INSTITUTION_NAME = 'ZivaDzidzo Pilot Secondary School';
