@@ -1,0 +1,17 @@
+[
+{"id":"cs-01","input_features":{"subject":"Computer Science","review_year":2025,"practical_hours":28,"ai_literacy":true},"expected_score_range":[78,96],"expected_band":"low","notes":"Current applied curriculum includes AI literacy."},
+{"id":"cs-02","input_features":{"subject":"Agriculture","review_year":2023,"practical_hours":24,"data_literacy":true},"expected_score_range":[75,92],"expected_band":"low","notes":"Recent, contextual, practical learning."},
+{"id":"cs-03","input_features":{"subject":"Biology","review_year":2024,"practical_hours":20,"inquiry_projects":true},"expected_score_range":[75,90],"expected_band":"low","notes":"Inquiry and lab practice support relevance."},
+{"id":"cs-04","input_features":{"subject":"Mathematics","review_year":2021,"practical_hours":10,"data_literacy":true},"expected_score_range":[50,74],"expected_band":"moderate","notes":"Useful foundations but modest refresh cycle."},
+{"id":"cs-05","input_features":{"subject":"Geography","review_year":2021,"practical_hours":10,"gis":false},"expected_score_range":[50,70],"expected_band":"moderate","notes":"Missing GIS limits modern application."},
+{"id":"cs-06","input_features":{"subject":"English","review_year":2020,"practical_hours":8,"media_literacy":true},"expected_score_range":[52,70],"expected_band":"moderate","notes":"Communication value remains but needs digital practice."},
+{"id":"cs-07","input_features":{"subject":"Commerce","review_year":2017,"practical_hours":4,"digital_commerce":false},"expected_score_range":[25,49],"expected_band":"high","notes":"Routine clerical focus is automation-prone."},
+{"id":"cs-08","input_features":{"subject":"Accounting","review_year":2016,"practical_hours":3,"spreadsheets":false},"expected_score_range":[25,45],"expected_band":"high","notes":"Outdated tools and little application."},
+{"id":"cs-09","input_features":{"subject":"History","review_year":2018,"practical_hours":5,"source_evaluation":false},"expected_score_range":[30,49],"expected_band":"high","notes":"Needs evidence and digital-archive work."},
+{"id":"cs-10","input_features":{"subject":"Shona","review_year":2012,"practical_hours":1,"digital_storytelling":false},"expected_score_range":[0,24],"expected_band":"critical","notes":"Very old, recall-heavy outline."},
+{"id":"cs-11","input_features":{"subject":"Business Studies","review_year":2014,"practical_hours":2,"entrepreneurship_projects":false},"expected_score_range":[5,24],"expected_band":"critical","notes":"No applied, contemporary enterprise skills."},
+{"id":"cs-12","input_features":{"subject":"Physics","review_year":2013,"practical_hours":2,"simulation_use":false},"expected_score_range":[10,24],"expected_band":"critical","notes":"Theoretical, outdated, and low practical exposure."},
+{"id":"cs-13","input_features":{"subject":"Art","review_year":2024,"practical_hours":22,"portfolio_assessment":true},"expected_score_range":[76,92],"expected_band":"low","notes":"Portfolio work remains strongly relevant."},
+{"id":"cs-14","input_features":{"subject":"Chemistry","review_year":2020,"practical_hours":12,"data_logging":false},"expected_score_range":[50,69],"expected_band":"moderate","notes":"Core relevance but missing modern lab data practice."},
+{"id":"cs-15","input_features":{"subject":"Shona","review_year":2017,"practical_hours":5,"oral_history":true},"expected_score_range":[28,48],"expected_band":"high","notes":"Some authentic practice does not offset an old outline."}
+]
