@@ -2,6 +2,7 @@ import './global.css';
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
 import { useFonts, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
@@ -59,6 +60,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    Notifications.getPermissionsAsync().then(({ status }) => {
+      if (status !== 'granted') return Notifications.requestPermissionsAsync();
+      return null;
+    }).catch(() => undefined);
     if (!isSupabaseConfigured) {
       // Mirrors the backend's own demo-mode fallback: the curriculum-audit flow keeps
       // working without any Supabase project configured, matching the pre-auth demo.
@@ -123,3 +128,4 @@ export default function App() {
     </>
   );
 }
+Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });

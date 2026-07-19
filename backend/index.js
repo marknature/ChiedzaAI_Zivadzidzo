@@ -1,11 +1,15 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const supabase = require('./db'); // Import the Supabase client connection
 const { createAudit } = require('./auditService');
 const authRoutes = require('./routes/auth');
 const teachersRoutes = require('./routes/teachers');
 const predictRoutes = require('./routes/predict');
 const chatRoutes = require('./routes/chat');
+const schoolsRoutes = require('./routes/schools');
+const reportsRoutes = require('./routes/reports');
+const { ipLimiter } = require('./middleware/security');
 require('dotenv').config({ quiet: true });
 
 const app = express();
@@ -13,12 +17,16 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
+app.use(ipLimiter);
 
 app.use('/auth', authRoutes);
 app.use('/teachers', teachersRoutes);
 app.use('/predict', predictRoutes);
 app.use('/chat', chatRoutes);
+app.use('/schools', schoolsRoutes);
+app.use('/reports', reportsRoutes);
 
 // Base Route
 app.get('/', (req, res) => {

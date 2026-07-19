@@ -130,6 +130,48 @@ async function insertChatMessage(client, message) {
   return data;
 }
 
+async function getSchoolStructure(client, institutionId) {
+  const { data: departments, error: departmentError } = await client.from(TABLES.DEPARTMENTS).select('id, name').eq('institution_id', institutionId).order('name');
+  if (departmentError) throw new Error(`Could not load departments: ${departmentError.message}`);
+  const departmentIds = departments.map((department) => department.id);
+  if (!departmentIds.length) return [];
+  const { data: subjects, error: subjectError } = await client.from(TABLES.SUBJECTS).select('id, department_id, name, grade_level').in('department_id', departmentIds).order('name');
+  if (subjectError) throw new Error(`Could not load subjects: ${subjectError.message}`);
+  return departments.map((department) => ({ ...department, subjects: subjects.filter((subject) => subject.department_id === department.id) }));
+}
+
+async function importRosterRows(client, institutionId, rows) {
+  const imported = [];
+  for (const row of rows) {
+    let subjectId = null;
+    if (row.subject_name) {
+      let departmentId = null;
+      if (row.department_name) {
+        const { data: department, error } = await client.from(TABLES.DEPARTMENTS).upsert({ institution_id: institutionId, name: row.department_name }, { onConflict: 'institution_id,name' }).select('id').single();
+        if (error) throw new Error(`Could not save department: ${error.message}`);
+        departmentId = department.id;
+      }
+      if (!departmentId) {
+        const { data: department, error } = await client.from(TABLES.DEPARTMENTS).select('id').eq('institution_id', institutionId).limit(1).maybeSingle();
+        if (error) throw new Error(`Could not find a department for subject: ${error.message}`);
+        departmentId = department?.id;
+      }
+      if (!departmentId) throw new Error(`Row for ${row.full_name} names a subject but no department; add department_name.`);
+      const { data: subject, error } = await client.from(TABLES.SUBJECTS).upsert({ department_id: departmentId, name: row.subject_name, grade_level: row.grade_level }, { onConflict: 'department_id,name,grade_level' }).select('id').single();
+      if (error) throw new Error(`Could not save subject: ${error.message}`);
+      subjectId = subject.id;
+    }
+    imported.push(await insertTeacher(client, { institution_id: institutionId, full_name: row.full_name, subject_id: subjectId, years_experience: row.years_experience, ai_tool_usage_frequency: row.ai_tool_usage_frequency, digital_skills_score: row.digital_skills_score, training_hours: row.training_hours, last_assessed_at: new Date().toISOString() }));
+  }
+  return imported;
+}
+
+async function insertReport(client, report) {
+  const { data, error } = await client.from(TABLES.REPORTS).insert([report]).select().single();
+  if (error) throw new Error(`Could not save report record: ${error.message}`);
+  return data;
+}
+
 module.exports = {
   clientForToken,
   listTeachers,
@@ -143,4 +185,7 @@ module.exports = {
   createChatSession,
   listChatMessages,
   insertChatMessage,
+  getSchoolStructure,
+  importRosterRows,
+  insertReport,
 };

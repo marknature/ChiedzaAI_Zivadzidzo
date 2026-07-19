@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabase, supabaseAdmin } = require('../db');
 const { ROLES } = require('../config');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -57,5 +58,7 @@ router.post('/session-sync', async (req, res) => {
 
   res.status(201).json({ success: true, profile: newProfile, created: true });
 });
+
+router.get('/me', requireAuth, (req, res) => res.json({ success: true, profile: req.profile }));
 
 module.exports = router;

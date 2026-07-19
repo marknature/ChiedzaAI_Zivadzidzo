@@ -3,6 +3,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const supabaseService = require('../services/supabaseService');
 const predictionService = require('../services/predictionService');
 const { TASK_TYPES, PREDICTION_WRITE_ROLES } = require('../config');
+const { userPredictionLimiter } = require('../middleware/security');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -21,7 +22,7 @@ function handlePredictionError(res, error, taskLabel) {
   return res.status(502).json({ success: false, error: 'The prediction could not be completed. Please retry.' });
 }
 
-router.post('/teacher-roles', requireRole(...PREDICTION_WRITE_ROLES), async (req, res) => {
+router.post('/teacher-roles', requireRole(...PREDICTION_WRITE_ROLES), userPredictionLimiter, async (req, res) => {
   try {
     const client = supabaseService.clientForToken(req.authToken);
     const prediction = await predictionService.predictTeacherRoles({
@@ -45,7 +46,7 @@ router.get('/teacher-roles', async (req, res) => {
   }
 });
 
-router.post('/learning-outcomes', requireRole(...PREDICTION_WRITE_ROLES), async (req, res) => {
+router.post('/learning-outcomes', requireRole(...PREDICTION_WRITE_ROLES), userPredictionLimiter, async (req, res) => {
   try {
     const client = supabaseService.clientForToken(req.authToken);
     const prediction = await predictionService.predictLearningOutcomes({
@@ -74,7 +75,7 @@ router.get('/learning-outcomes', async (req, res) => {
 // working exactly as before, writing to the `audits` table, so the already-shipped
 // CurriculumAuditScreen demo never regresses. This route is the new, properly-shaped
 // curriculum_skills predict head - writes to `predictions` like the other two heads.
-router.post('/curriculum-skills', requireRole(...PREDICTION_WRITE_ROLES), async (req, res) => {
+router.post('/curriculum-skills', requireRole(...PREDICTION_WRITE_ROLES), userPredictionLimiter, async (req, res) => {
   try {
     const client = supabaseService.clientForToken(req.authToken);
     const prediction = await predictionService.predictCurriculumSkills({

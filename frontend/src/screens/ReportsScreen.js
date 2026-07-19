@@ -1,14 +1,13 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { FileText } from 'lucide-react-native';
-import PlaceholderScreen from './PlaceholderScreen';
+import { apiFetch } from '../lib/api';
+import { colors } from '../theme/colors';
 
 export default function ReportsScreen() {
-  return (
-    <PlaceholderScreen
-      icon={FileText}
-      title="Executive Reports"
-      phaseLabel="Coming in Phase 3"
-      description="Generate Word/PDF reports from a prediction or a chat conversation, with embedded charts."
-    />
-  );
+  const [predictions, setPredictions] = useState([]); const [loading, setLoading] = useState(true); const [creating, setCreating] = useState(null); const [error, setError] = useState(null);
+  const load = useCallback(async () => { setLoading(true); try { const results = await Promise.all(['/predict/teacher-roles', '/predict/learning-outcomes', '/predict/curriculum-skills'].map((path) => apiFetch(path))); setPredictions(results.flatMap((item) => item.predictions || [])); } catch (cause) { setError(cause.message); } finally { setLoading(false); } }, []);
+  useEffect(() => { load(); }, [load]);
+  async function create(predictionId, format) { setCreating(`${predictionId}-${format}`); setError(null); try { const result = await apiFetch(`/reports/prediction/${predictionId}`, { method: 'POST', body: JSON.stringify({ format }) }); await Linking.openURL(result.url); } catch (cause) { setError(cause.message); } finally { setCreating(null); } }
+  return <ScrollView className="flex-1 px-5 pt-14" style={{ backgroundColor: colors.bg }}><View className="flex-row items-center"><FileText color={colors.teal} size={25} /><Text className="ml-2 text-2xl font-bold" style={{ color: colors.ink }}>Executive Reports</Text></View><Text className="mt-2" style={{ color: colors.inkMuted }}>Export a score, its rationale, actions and caveat as Word or PDF.</Text>{loading && <ActivityIndicator className="mt-8" color={colors.teal} />}{error && <Text className="mt-4" style={{ color: colors.red }}>{error}</Text>}{!loading && !predictions.length && <Text className="mt-8" style={{ color: colors.inkMuted }}>Run a prediction first to generate a report.</Text>}{predictions.map((prediction) => <View key={prediction.id} className="mt-4 rounded-2xl border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><Text className="font-semibold capitalize" style={{ color: colors.ink }}>{prediction.task_type.replace('_', ' ')}</Text><Text className="mt-1 text-xs" style={{ color: colors.inkMuted }}>{new Date(prediction.created_at).toLocaleDateString()}</Text><View className="mt-3 flex-row gap-2">{['docx', 'pdf'].map((format) => <Pressable key={format} onPress={() => create(prediction.id, format)} disabled={Boolean(creating)} className="rounded-lg px-3 py-2" style={{ backgroundColor: colors.teal, opacity: creating ? 0.6 : 1 }}><Text className="text-xs font-bold uppercase" style={{ color: colors.bg }}>{creating === `${prediction.id}-${format}` ? 'Working…' : format}</Text></Pressable>)}</View></View>)}</ScrollView>;
 }

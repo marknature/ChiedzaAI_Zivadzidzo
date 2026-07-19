@@ -1,14 +1,13 @@
-import React from 'react';
-import { Building2 } from 'lucide-react-native';
-import PlaceholderScreen from './PlaceholderScreen';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Building2, ChevronDown, ChevronRight } from 'lucide-react-native';
+import { apiFetch } from '../lib/api';
+import { colors } from '../theme/colors';
+import UploadScreen from './UploadScreen';
 
 export default function MySchoolScreen() {
-  return (
-    <PlaceholderScreen
-      icon={Building2}
-      title="My School"
-      phaseLabel="Coming in Phase 3"
-      description="Departments, subjects, and staff as an expandable list, plus CSV/XLSX roster import."
-    />
-  );
+  const [structure, setStructure] = useState([]); const [open, setOpen] = useState({}); const [loading, setLoading] = useState(true); const [institutionId, setInstitutionId] = useState(null);
+  const load = useCallback(async () => { setLoading(true); try { const profile = await apiFetch('/auth/me'); setInstitutionId(profile.profile.institution_id); const data = await apiFetch(`/schools/${profile.profile.institution_id}/structure`); setStructure(data.structure); } catch (_) { setStructure([]); } finally { setLoading(false); } }, []);
+  useEffect(() => { load(); }, [load]);
+  return <ScrollView className="flex-1 px-5 pt-14" style={{ backgroundColor: colors.bg }}><View className="flex-row items-center"><Building2 color={colors.teal} size={25} /><Text className="ml-2 text-2xl font-bold" style={{ color: colors.ink }}>My School</Text></View><Text className="mt-2" style={{ color: colors.inkMuted }}>Departments and subjects are grouped for a compact mobile view.</Text>{loading ? <ActivityIndicator className="mt-8" color={colors.teal} /> : structure.map((department) => <View key={department.id} className="mt-4 rounded-2xl border" style={{ borderColor: colors.border, backgroundColor: colors.surface }}><Pressable className="flex-row items-center justify-between p-4" onPress={() => setOpen((value) => ({ ...value, [department.id]: !value[department.id] }))}><Text className="font-semibold" style={{ color: colors.ink }}>{department.name}</Text>{open[department.id] ? <ChevronDown color={colors.teal} /> : <ChevronRight color={colors.inkMuted} />}</Pressable>{open[department.id] && <View className="border-t px-4 pb-3" style={{ borderColor: colors.border }}>{department.subjects.map((subject) => <View key={subject.id} className="py-3"><Text style={{ color: colors.ink }}>{subject.name}</Text><Text className="text-xs" style={{ color: colors.inkMuted }}>{subject.grade_level || 'All grades'}</Text></View>)}{!department.subjects.length && <Text className="py-3 text-xs" style={{ color: colors.inkMuted }}>No subjects yet</Text>}</View>}</View>)}{!loading && !structure.length && <Text className="mt-6" style={{ color: colors.inkMuted }}>No departments yet. Import a roster to create them.</Text>}{institutionId && <UploadScreen institutionId={institutionId} onComplete={load} />}</ScrollView>;
 }
