@@ -1,6 +1,6 @@
 const { runStructuredPrediction } = require('./openaiService');
 const { calculateReadiness } = require('../auditService');
-const { curriculumSkillsSchema, curriculumSkillsSystemPrompt } = require('../schemas/curriculumSkills');
+const { curriculumSkillsSchema, curriculumSkillsZod, curriculumSkillsSystemPrompt } = require('../schemas/curriculumSkills');
 
 const MAX_SYLLABUS_CHARS = 16000;
 
@@ -28,6 +28,7 @@ async function runCurriculumSkillsPrediction({ title, gradeLevel, syllabusText, 
 
   const { result, modelUsed, costUsd } = await runStructuredPrediction({
     schema: curriculumSkillsSchema,
+    zodSchema: curriculumSkillsZod,
     systemPrompt: curriculumSkillsSystemPrompt,
     userContent,
   });
@@ -38,7 +39,7 @@ async function runCurriculumSkillsPrediction({ title, gradeLevel, syllabusText, 
     curriculum_readiness_score: curriculumReadinessScore,
     readiness_band: readinessBand(curriculumReadinessScore),
     contributing_factors: subjectsToContributingFactors(result.subjects),
-    recommended_actions: result.recommendations,
+    recommended_actions: result.recommended_actions,
     confidence: result.confidence,
     caveats: result.caveats,
     subjects: result.subjects,

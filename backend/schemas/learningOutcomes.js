@@ -2,6 +2,14 @@
 // applied to this head). Cohort/subject-level only - this head must NEVER be called with an
 // individual student identifier as input (see the route's input validation and
 // prompt.md's "Student data" rule / KNOWN_LIMITATIONS.md).
+const { z, predictionCommonZod } = require('./contracts');
+
+const learningOutcomesZod = z.object({
+  pass_rate_resilience_score: z.number().min(0).max(100),
+  trajectory_band: z.enum(['declining', 'at_risk', 'stable', 'improving']),
+  ...predictionCommonZod,
+}).strict();
+
 const learningOutcomesSchema = {
   name: 'learning_outcomes_trajectory_assessment',
   strict: true,
@@ -58,4 +66,4 @@ structured output (not a trained model's output), that contributing_factors are 
 (not a mechanistic decomposition like SHAP), and that inputs are cohort-level aggregates only, never individual \
 student records.`;
 
-module.exports = { learningOutcomesSchema, learningOutcomesSystemPrompt };
+module.exports = { learningOutcomesSchema, learningOutcomesZod, learningOutcomesSystemPrompt };

@@ -1,6 +1,15 @@
 // Strict JSON Schema for the Teacher Roles predict head (prompt.md Section 6.2 / 6.3).
 // Every predict head schema must carry: a score+band, contributing_factors, recommended_actions,
 // confidence, and a caveats string that is specific to this prediction, not a generic disclaimer.
+const { z, predictionCommonZod } = require('./contracts');
+
+const teacherRolesZod = z.object({
+  ai_disruption_exposure_score: z.number().min(0).max(100),
+  exposure_band: z.enum(['low', 'moderate', 'high', 'critical']),
+  reskilling_priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  ...predictionCommonZod,
+}).strict();
+
 const teacherRolesSchema = {
   name: 'teacher_ai_disruption_assessment',
   strict: true,
@@ -56,4 +65,4 @@ The "caveats" field must state, specific to this prediction, that this is an LLM
 trained model's output) and that contributing_factors are associational/plausibility-ranked, not a mechanistic \
 decomposition like SHAP - do not write a generic disclaimer, write one grounded in what was just predicted.`;
 
-module.exports = { teacherRolesSchema, teacherRolesSystemPrompt };
+module.exports = { teacherRolesSchema, teacherRolesZod, teacherRolesSystemPrompt };

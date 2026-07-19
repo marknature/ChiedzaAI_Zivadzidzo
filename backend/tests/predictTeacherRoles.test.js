@@ -1,6 +1,7 @@
 const { computeTeacherRolesEngineeredFeatures } = require('../services/predictionService');
 const { runStructuredPrediction } = require('../services/openaiService');
 const { teacherRolesSchema, teacherRolesSystemPrompt } = require('../schemas/teacherRoles');
+const { findStudentIdentifierFields } = require('../services/predictionService');
 
 describe('computeTeacherRolesEngineeredFeatures', () => {
   test('digital_readiness_index and training_hours_per_year_of_service match the documented formulas', () => {
@@ -36,6 +37,11 @@ describe('computeTeacherRolesEngineeredFeatures', () => {
     expect(Number.isNaN(result.digital_readiness_index)).toBe(false);
     expect(result.digital_readiness_index).toBeCloseTo(20, 5); // 0.5*40 + 0 + 0
   });
+});
+
+test('nested student identifiers are detected before cohort prediction input reaches the model', () => {
+  expect(findStudentIdentifierFields({ cohort: { learnerName: 'Protected learner' } })).toEqual(['$.cohort.learnerName']);
+  expect(findStudentIdentifierFields({ historicalPassRates: [{ period: 'Term 1', passRatePercent: 56 }] })).toEqual([]);
 });
 
 // Prompt regression suite (prompt.md Phase 1, item 7): synthetic profiles across the

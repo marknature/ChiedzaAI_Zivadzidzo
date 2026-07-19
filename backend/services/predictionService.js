@@ -1,7 +1,7 @@
 const supabaseService = require('./supabaseService');
 const { runStructuredPrediction } = require('./openaiService');
-const { teacherRolesSchema, teacherRolesSystemPrompt } = require('../schemas/teacherRoles');
-const { learningOutcomesSchema, learningOutcomesSystemPrompt } = require('../schemas/learningOutcomes');
+const { teacherRolesSchema, teacherRolesZod, teacherRolesSystemPrompt } = require('../schemas/teacherRoles');
+const { learningOutcomesSchema, learningOutcomesZod, learningOutcomesSystemPrompt } = require('../schemas/learningOutcomes');
 const { runCurriculumSkillsPrediction: runCurriculumSkillsLLM } = require('./curriculumService');
 const { TASK_TYPES, AI_TOOL_USAGE_FREQUENCY_NUMERIC, modelVersionTag } = require('../config');
 const { notifyPriorityPrediction } = require('./notificationService');
@@ -10,7 +10,16 @@ const { notifyPriorityPrediction } = require('./notificationService');
 // produce identical persisted rows/cost entries - one implementation of each predict head,
 // not two that can drift apart.
 
-const STUDENT_IDENTIFIER_FIELDS = ['studentId', 'studentName', 'student_id', 'student_name', 'learnerId', 'learnerName'];
+const STUDENT_IDENTIFIER_FIELDS = new Set(['studentid', 'studentname', 'student_id', 'student_name', 'learnerid', 'learnername', 'student_number', 'learner_number', 'national_id']);
+
+function findStudentIdentifierFields(value, path = '$') {
+  if (!value || typeof value !== 'object') return [];
+  if (Array.isArray(value)) return value.flatMap((item, index) => findStudentIdentifierFields(item, `${path}[${index}]`));
+  return Object.entries(value).flatMap(([key, nested]) => [
+    ...(STUDENT_IDENTIFIER_FIELDS.has(key.toLowerCase()) ? [`${path}.${key}`] : []),
+    ...findStudentIdentifierFields(nested, `${path}.${key}`),
+  ]);
+}
 
 function computeTeacherRolesEngineeredFeatures(teacher) {
   const yearsExperience = Math.max(Number(teacher.years_experience) || 0, 1);
@@ -77,6 +86,7 @@ async function predictTeacherRoles({ client, profile, teacherId }) {
 
   const { result, modelUsed, costUsd } = await runStructuredPrediction({
     schema: teacherRolesSchema,
+    zodSchema: teacherRolesZod,
     systemPrompt: teacherRolesSystemPrompt,
     userContent,
   });
@@ -111,7 +121,7 @@ async function predictTeacherRoles({ client, profile, teacherId }) {
 }
 
 async function predictLearningOutcomes({ client, profile, subjectName, gradeLevel, historicalPassRates, aiToolExposureLevel, cohortSize, rawBody }) {
-  const presentIdentifierFields = STUDENT_IDENTIFIER_FIELDS.filter((field) => field in (rawBody || {}));
+  const presentIdentifierFields = findStudentIdentifierFields(rawBody || {});
   if (presentIdentifierFields.length > 0) {
     const error = new Error(`The learning-outcomes head only accepts cohort/subject-level aggregates, never individual student identifiers. Remove: ${presentIdentifierFields.join(', ')}.`);
     error.code = 'VALIDATION';
@@ -127,8 +137,18 @@ async function predictLearningOutcomes({ client, profile, subjectName, gradeLeve
     error.code = 'VALIDATION';
     throw error;
   }
+  if (historicalPassRates.some((point) => !point || typeof point.period !== 'string' || typeof point.passRatePercent !== 'number' || point.passRatePercent < 0 || point.passRatePercent > 100)) {
+    const error = new Error('Each historicalPassRates item must contain a period string and passRatePercent between 0 and 100.');
+    error.code = 'VALIDATION';
+    throw error;
+  }
   if (typeof aiToolExposureLevel !== 'number' || aiToolExposureLevel < 0 || aiToolExposureLevel > 100) {
     const error = new Error('aiToolExposureLevel must be a number between 0 and 100.');
+    error.code = 'VALIDATION';
+    throw error;
+  }
+  if (cohortSize !== undefined && (!Number.isInteger(cohortSize) || cohortSize < 1)) {
+    const error = new Error('cohortSize must be a positive whole number when provided.');
     error.code = 'VALIDATION';
     throw error;
   }
@@ -147,6 +167,7 @@ async function predictLearningOutcomes({ client, profile, subjectName, gradeLeve
 
   const { result, modelUsed, costUsd } = await runStructuredPrediction({
     schema: learningOutcomesSchema,
+    zodSchema: learningOutcomesZod,
     systemPrompt: learningOutcomesSystemPrompt,
     userContent,
   });
@@ -225,4 +246,5 @@ module.exports = {
   predictCurriculumSkills,
   computeTeacherRolesEngineeredFeatures,
   computeLearningOutcomesEngineeredFeatures,
+  findStudentIdentifierFields,
 };

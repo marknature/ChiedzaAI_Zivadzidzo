@@ -21,6 +21,11 @@ function validate(schema, data, path = '$') {
     for (const key of schema.required || []) {
       if (!(key in data)) throw new Error(`Schema validation failed at ${path}: missing required field "${key}"`);
     }
+    if (schema.additionalProperties === false) {
+      for (const key of Object.keys(data)) {
+        if (!(key in (schema.properties || {}))) throw new Error(`Schema validation failed at ${path}: unexpected field "${key}"`);
+      }
+    }
     for (const [key, propSchema] of Object.entries(schema.properties || {})) {
       if (key in data) validate(propSchema, data[key], `${path}.${key}`);
     }
@@ -30,6 +35,9 @@ function validate(schema, data, path = '$') {
     if (!Array.isArray(data)) throw new Error(`Schema validation failed at ${path}: expected array`);
     if (typeof schema.minItems === 'number' && data.length < schema.minItems) {
       throw new Error(`Schema validation failed at ${path}: expected at least ${schema.minItems} items`);
+    }
+    if (typeof schema.maxItems === 'number' && data.length > schema.maxItems) {
+      throw new Error(`Schema validation failed at ${path}: expected at most ${schema.maxItems} items`);
     }
     if (schema.items) data.forEach((item, i) => validate(schema.items, item, `${path}[${i}]`));
     return;
@@ -61,7 +69,7 @@ function estimateCostUsd(model, usage) {
 // Set `allowFallback: true` for the legacy demo-mode path (curriculum audit) where no API
 // key is treated as "run in demo mode" rather than an error - the three real predict heads
 // should NOT set this, a missing key there is a real configuration error.
-async function runStructuredPrediction({ schema, systemPrompt, userContent, model = OPENAI_MODELS.PREDICT }) {
+async function runStructuredPrediction({ schema, zodSchema, systemPrompt, userContent, model = OPENAI_MODELS.PREDICT }) {
   const openai = getClient();
   if (!openai) {
     const error = new Error('OPENAI_API_KEY is not configured.');
@@ -96,6 +104,7 @@ async function runStructuredPrediction({ schema, systemPrompt, userContent, mode
   }
 
   validate(schema.schema, parsed);
+  if (zodSchema) zodSchema.parse(parsed);
 
   const usage = completion.usage;
   return {

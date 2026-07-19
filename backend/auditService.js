@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const { OPENAI_MODELS } = require('./config');
 
 const MAX_SYLLABUS_CHARS = 16000;
 
@@ -106,7 +107,8 @@ async function analyzeWithOpenAI({ title, gradeLevel, syllabusText }) {
   if (!process.env.OPENAI_API_KEY) return null;
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const completion = await client.chat.completions.create({
-    model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+    model: OPENAI_MODELS.PREDICT,
+    temperature: 0,
     response_format: { type: 'json_schema', json_schema: auditSchema },
     messages: [
       {

@@ -11,7 +11,7 @@ const TASK_TYPES = Object.freeze({
 // silently change prediction behaviour underneath a fixed prompt version.
 const OPENAI_MODELS = Object.freeze({
   PREDICT: process.env.OPENAI_PREDICT_MODEL || 'gpt-4o-2024-08-06',
-  CHAT: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+  CHAT: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini-2024-07-18',
   // Demo-mode fallback used by the original curriculum auditor when no API key is set.
   DEMO_FALLBACK_MODEL: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
 });
