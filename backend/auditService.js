@@ -1,5 +1,6 @@
-const OpenAI = require('openai');
-const { OPENAI_MODELS } = require('./config');
+const { runStructuredPrediction } = require('./services/openaiService');
+const { TASK_TYPES, modelVersionTag } = require('./config');
+const { rejectLearnerIdentifiers } = require('./services/privacyService');
 
 const MAX_SYLLABUS_CHARS = 16000;
 
@@ -45,7 +46,10 @@ function calculateReadiness(subjects, futureSkillsScore, alpha = 0.8) {
     (sum, subject) => sum + (subject.weight / totalWeight) * (1 - subject.vulnerability),
     0
   );
-  return Number(((resilience + clamp(alpha, 0, 1) * (futureSkillsScore / 100)) * 100).toFixed(1));
+  const weight = clamp(alpha, 0, 1);
+  // Both components are 0–1. Normalising by their total weight keeps the
+  // published readiness score and readiness-band contract within 0–100.
+  return Number((((resilience + weight * (futureSkillsScore / 100)) / (1 + weight)) * 100).toFixed(1));
 }
 
 function normalizeAudit(audit) {
@@ -65,72 +69,23 @@ function normalizeAudit(audit) {
   };
 }
 
-function fallbackAudit(syllabusText) {
-  const lines = syllabusText
-    .split(/\r?\n|;/)
-    .map((line) => line.replace(/^\s*(unit|module|topic|week|chapter)\s*\d*\s*[:.-]?\s*/i, '').trim())
-    .filter((line) => line.length > 3)
-    .slice(0, 5);
-  const topics = lines.length ? lines : ['Foundational concepts', 'Applied practice', 'Systems thinking'];
-  const lower = syllabusText.toLowerCase();
-  const hasPractice = /project|practical|lab|portfolio|case study|fieldwork/.test(lower);
-  const hasAI = /ai|artificial intelligence|machine learning|data literacy|prompt/.test(lower);
-  const hasCriticalThinking = /critical thinking|ethics|problem.solving|collaborat/.test(lower);
-  const futureSkillsScore = Math.min(95, 35 + (hasPractice ? 25 : 0) + (hasAI ? 25 : 0) + (hasCriticalThinking ? 15 : 0));
-
-  return {
-    subjects: topics.map((name, index) => {
-      const isPractical = /project|practical|lab|design|system|research|ethic|clinical/.test(name.toLowerCase());
-      return {
-        name,
-        weight: 1 / topics.length,
-        vulnerability: isPractical ? 0.3 : Math.min(0.86, 0.72 + index * 0.04),
-        rationale: isPractical
-          ? 'Applied work and judgement make this area more resilient to automation.'
-          : 'The topic appears knowledge-heavy; learners need more applied, AI-supported work.',
-        modernization: isPractical
-          ? 'Add an AI-assisted reflection and evidence-based assessment rubric.'
-          : 'Add a practical challenge where learners verify, critique, and improve AI output.'
-      };
-    }),
-    futureSkillsScore,
-    summary: 'Demo-mode analysis based on the syllabus language. Add an OpenAI API key for a deeper, curriculum-specific audit.',
-    recommendations: [
-      'Assess evidence, judgement, and iteration—not recall alone.',
-      'Add one authentic project with responsible AI collaboration.',
-      'Teach learners to verify sources and challenge AI-generated answers.'
-    ]
-  };
-}
-
 async function analyzeWithOpenAI({ title, gradeLevel, syllabusText }) {
-  if (!process.env.OPENAI_API_KEY) return null;
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const completion = await client.chat.completions.create({
-    model: OPENAI_MODELS.PREDICT,
-    temperature: 0,
-    response_format: { type: 'json_schema', json_schema: auditSchema },
-    messages: [
-      {
-        role: 'system',
-        content: 'You are ZivaDzidzo, a careful curriculum-modernization analyst. Analyse only the supplied syllabus. Estimate automation vulnerability as a learning-design risk, never as a judgement of teachers or learners. Give concrete, age-appropriate modernization steps.'
-      },
-      {
-        role: 'user',
-        content: `Curriculum: ${title}\nLevel: ${gradeLevel || 'Not specified'}\n\nSyllabus:\n${syllabusText.slice(0, MAX_SYLLABUS_CHARS)}`
-      }
-    ]
+  const { result, modelUsed, costUsd } = await runStructuredPrediction({
+    schema: auditSchema,
+    systemPrompt: 'You are ZivaDzidzo, a careful curriculum-modernization analyst. Analyse only the supplied syllabus. Estimate automation vulnerability as a learning-design risk, never as a judgement of teachers or learners. Give concrete, age-appropriate modernization steps.',
+    userContent: `Curriculum: ${title}\nLevel: ${gradeLevel || 'Not specified'}\n\nSyllabus:\n${syllabusText.slice(0, MAX_SYLLABUS_CHARS)}`,
   });
-  return normalizeAudit(JSON.parse(completion.choices[0].message.content));
+  return { ...normalizeAudit(result), modelUsed, costUsd };
 }
 
 async function createAudit(input) {
-  const aiAudit = await analyzeWithOpenAI(input);
-  const audit = aiAudit || fallbackAudit(input.syllabusText);
+  rejectLearnerIdentifiers(input.syllabusText);
+  const audit = await analyzeWithOpenAI(input);
   return {
     ...audit,
     readinessIndex: calculateReadiness(audit.subjects, audit.futureSkillsScore, input.alpha),
-    analysisMode: aiAudit ? 'openai' : 'demo'
+    analysisMode: 'openai',
+    modelVersion: modelVersionTag(TASK_TYPES.CURRICULUM_SKILLS),
   };
 }
 

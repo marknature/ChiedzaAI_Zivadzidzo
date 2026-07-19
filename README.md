@@ -2,7 +2,7 @@
 
 > **"Forecasting tomorrow's skills to modernize today's classrooms."**
 
-ZivaDzidzo is an interactive educational intelligence platform designed to transition school administrations, teachers, and policy-makers from a reactive stance to a proactive shield. Built for the **OpenAI Build Week Challenge (Education Track)**, the application audits existing school syllabi against emerging technological trends, pinpointing curriculum skill gaps and simulating future student readiness using dynamic dashboards.
+ZivaDzidzo is an interactive educational intelligence platform designed to transition school administrations, teachers, and policy-makers from a reactive stance to a proactive shield. Built for the **OpenAI Build Week Challenge (Education Track)**, the application audits existing school syllabi against emerging technological trends and turns curriculum-readiness gaps into explainable next actions.
 
 <br>
 
@@ -12,8 +12,8 @@ ZivaDzidzo is an interactive educational intelligence platform designed to trans
 
 ## 🚀 Key Features
 
-1. **Curriculum Gap Auditor:** Upload standard curriculum PDF/TXT documents. GPT-5.6 parses the content, maps subjects against real-world automation indices, and outputs highly actionable modernization recommendations.
-2. **"What-If" Skills Simulator:** An interactive simulation workspace allowing educators to adjust classroom parameter sliders (e.g., increasing digital literacy instruction time or project-based learning) to instantly view projected readiness outcomes.
+1. **Curriculum Gap Auditor:** Paste a curriculum outline for structured OpenAI analysis, a Skills Obsolescence & Readiness Index, and actionable modernization recommendations.
+2. **Explainable Readiness Score:** Open each curriculum-area score to see its evidence, resilience signals, and the recommended next move.
 3. **Teacher Upskilling Co-Pilot:** Actionable pathways translating high-level industry and AI trends into daily, manageable classroom instructional tasks.
 
 <br>
@@ -23,13 +23,13 @@ ZivaDzidzo is an interactive educational intelligence platform designed to trans
 ZivaDzidzo is engineered on a modular, enterprise-grade architecture:
 
 *   **Frontend Mobile/Web:** Built with React Native, Expo, and styled via NativeWind for a highly responsive dashboard experience.
-*   **Backend REST API:** Engineered with a Node.js and Express server hosting our core predictive orchestration endpoints.
+*   **Backend REST API:** Engineered with a Node.js and Express server hosting audit and decision-support endpoints.
 *   **Database & Storage:** Leverages Supabase (PostgreSQL) to handle structured relational schemas, user historical audits, and global automation vectors.
 *   **Intelligence Layer:** Powering deep semantic reasoning via the **OpenAI GPT-5.6 API** and utilizing **Codex** inside VS Code for rapid development.
 
 <br>
 
-## 📐 The Predictive Math Model
+## 📐 The Readiness Score
 
 To calculate curriculum alignment, ZivaDzidzo computes a proprietary **Skills Obsolescence & Readiness Index ($R$)** directly on the client side for real-time simulation updates:
 
@@ -53,18 +53,6 @@ git clone [https://github.com/your-username/ziva-dzidzo.git](https://github.com/
 cd ziva-dzidzo
 
 ```
-
-### Model R&D layer
-
-The existing OpenAI/SRI audit remains the primary user workflow. An additive, privacy-bounded Industry 4.0 benchmark model lives under [`backend/notebooks/`](backend/notebooks/): it compares baseline and lightweight tabular models, exports a transparent JSON artifact, and is surfaced through `GET /models/industry4/status`.
-
-```bash
-cd backend/notebooks
-python train_numpy_portfolio.py
-python smoke_numpy.py
-```
-
-See [`backend/notebooks/MODEL_CARD.md`](backend/notebooks/MODEL_CARD.md) for measured results, data limitations, and the aggregate-only deployment boundary.
 
 ### 2. Set Up the Backend
 
@@ -108,7 +96,7 @@ npx expo start
 
 The judge-facing flow is ready: **paste syllabus → AI audit → SRI → explainable modernization actions**.
 
-1. Copy `backend/.env.example` to `backend/.env` and add `OPENAI_API_KEY`. The API operates in a deterministic demo mode without it, so the live experience still works reliably.
+1. Copy `backend/.env.example` to `backend/.env` and add `OPENAI_API_KEY`. Structured prediction routes intentionally return a configuration error until a backend-only key is present; ZivaDzidzo does not substitute heuristic or trained-model results.
 2. To persist history, run the SQL files in `backend/migrations/` (in order, `0000_...` then `0001_...`) in the Supabase SQL editor and add the Supabase credentials to `backend/.env`.
 3. When using a physical phone, point the Expo app at the computer running the API, for example: `EXPO_PUBLIC_API_URL=http://192.168.1.5:5000 npx expo start`. The default targets the local machine.
 

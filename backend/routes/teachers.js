@@ -1,7 +1,7 @@
 const express = require('express');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const supabaseService = require('../services/supabaseService');
-const { AI_TOOL_USAGE_FREQUENCY_NUMERIC } = require('../config');
+const { AI_TOOL_USAGE_FREQUENCY_NUMERIC, PREDICTION_WRITE_ROLES } = require('../config');
 const { userRequestLimiter } = require('../middleware/security');
 
 const router = express.Router();
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole(...PREDICTION_WRITE_ROLES), async (req, res) => {
   const { fullName, subjectId, yearsExperience, aiToolUsageFrequency, digitalSkillsScore, trainingHours } = req.body || {};
   if (!fullName || typeof fullName !== 'string') {
     return res.status(400).json({ success: false, error: 'fullName is required.' });
@@ -45,7 +45,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireRole(...PREDICTION_WRITE_ROLES), async (req, res) => {
   const patch = {};
   const { fullName, subjectId, yearsExperience, aiToolUsageFrequency, digitalSkillsScore, trainingHours } = req.body || {};
   if (fullName !== undefined) patch.full_name = fullName;

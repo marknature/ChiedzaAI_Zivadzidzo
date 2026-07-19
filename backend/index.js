@@ -10,7 +10,6 @@ const chatRoutes = require('./routes/chat');
 const schoolsRoutes = require('./routes/schools');
 const reportsRoutes = require('./routes/reports');
 const notificationsRoutes = require('./routes/notifications');
-const modelRoutes = require('./routes/models');
 const { ipLimiter } = require('./middleware/security');
 const { requireAuth, requireRole } = require('./middleware/auth');
 const { PREDICTION_WRITE_ROLES, TABLES } = require('./config');
@@ -32,7 +31,6 @@ app.use('/chat', chatRoutes);
 app.use('/schools', schoolsRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/notifications', notificationsRoutes);
-app.use('/models', modelRoutes);
 
 // Base Route
 app.get('/', (req, res) => {
@@ -71,6 +69,12 @@ app.post('/api/audit/analyze', requireAuth, requireRole(...PREDICTION_WRITE_ROLE
 
     res.status(200).json({ success: true, audit: { ...audit, title, gradeLevel }, saved });
   } catch (error) {
+    if (error.code === 'OPENAI_NOT_CONFIGURED') {
+      return res.status(503).json({ success: false, error: 'OPENAI_API_KEY is not configured on the backend.' });
+    }
+    if (error.code === 'VALIDATION') {
+      return res.status(400).json({ success: false, error: error.message });
+    }
     console.error('Audit analysis failed:', error.message);
     res.status(502).json({ success: false, error: 'The curriculum analysis could not be completed. Please retry.' });
   }

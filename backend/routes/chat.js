@@ -5,6 +5,7 @@ const { runChatCompletion, estimateCostUsd } = require('../services/openaiServic
 const { toolDefinitions, executeTool } = require('../services/chatTools');
 const { OPENAI_MODELS } = require('../config');
 const { userRequestLimiter } = require('../middleware/security');
+const { rejectLearnerIdentifiers } = require('../services/privacyService');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -65,11 +66,20 @@ router.post('/message', async (req, res) => {
   }
 
   try {
+    rejectLearnerIdentifiers(content.trim());
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
+
+  try {
     const client = supabaseService.clientForToken(req.authToken);
     const session = sessionId
-      ? { id: sessionId }
+      ? await supabaseService.getChatSession(client, sessionId, req.profile.institution_id, req.profile.id)
       : (await supabaseService.getLatestChatSession(client, req.profile.institution_id, req.profile.id))
         || (await supabaseService.createChatSession(client, req.profile.institution_id, req.profile.id, null));
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Chat session not found.' });
+    }
 
     const priorMessages = await supabaseService.listChatMessages(client, session.id);
     await supabaseService.insertChatMessage(client, { session_id: session.id, role: 'user', content: content.trim() });

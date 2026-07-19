@@ -11,12 +11,32 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 router.use(requireAuth);
 router.use(userRequestLimiter);
 
+router.get('/:id/overview', async (req, res) => {
+  if (req.params.id !== req.profile.institution_id) {
+    return res.status(403).json({ success: false, error: 'You cannot access another institution.' });
+  }
+  try {
+    const client = supabaseService.clientForToken(req.authToken);
+    const overview = await supabaseService.getSchoolOverview(client, req.profile.institution_id, {
+      isMinistryViewer: req.profile.role === 'ministry_viewer',
+    });
+    res.json({ success: true, overview });
+  } catch (error) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 500;
+    res.status(status).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/:id/structure', async (req, res) => {
   if (req.params.id !== req.profile.institution_id) return res.status(403).json({ success: false, error: 'You cannot access another institution.' });
   try {
     const client = supabaseService.clientForToken(req.authToken);
-    const structure = await supabaseService.getSchoolStructure(client, req.profile.institution_id);
-    res.json({ success: true, structure });
+    const schoolStructure = await supabaseService.getSchoolStructure(client, req.profile.institution_id, {
+      isMinistryViewer: req.profile.role === 'ministry_viewer',
+    });
+    // Keep `structure` as the department array for the existing mobile screen;
+    // `staffSummary` is the new aggregate-safe enrichment.
+    res.json({ success: true, structure: schoolStructure.departments, staffSummary: schoolStructure.staffSummary });
   } catch (error) { res.status(500).json({ success: false, error: error.message }); }
 });
 

@@ -66,9 +66,8 @@ function estimateCostUsd(model, usage) {
 
 // Runs one structured-output predict-head call. Returns the parsed+validated result plus
 // token usage/cost so the caller can persist both the prediction and its cost_entries row.
-// Set `allowFallback: true` for the legacy demo-mode path (curriculum audit) where no API
-// key is treated as "run in demo mode" rather than an error - the three real predict heads
-// should NOT set this, a missing key there is a real configuration error.
+// A missing backend key is always a configuration error: ZivaDzidzo does not substitute
+// heuristic, mock, or trained-model results for a structured LLM assessment.
 async function runStructuredPrediction({ schema, zodSchema, systemPrompt, userContent, model = OPENAI_MODELS.PREDICT }) {
   const openai = getClient();
   if (!openai) {

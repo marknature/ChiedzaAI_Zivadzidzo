@@ -1,8 +1,8 @@
 # Known limitations
 
-- No trained model in v1: every “prediction” is a GPT-4o structured-output completion against engineered features, not a model that learned from labelled outcomes.
-- Explainability is self-reported by the LLM, not a mechanistic decomposition (unlike SHAP) — treat contributing_factors as plausibility-ranked, not additive/quantitative proof.
-- Proxy/synthetic data only until a real pilot school data-sharing agreement exists.
-- Determinism is best-effort (temperature=0, pinned model snapshot) not guaranteed.
-- Student-level data is out of scope by design for v1, not an oversight.
-- The Industry 4.0 model is trained on an external vocational benchmark, not Zimbabwean school data. Its strong held-out scores establish fit to that dataset only; it is an aggregate planning aid, not a locally validated forecast.
+- ZivaDzidzo provides LLM-assisted decision support, not deterministic forecasts, diagnoses, or automated personnel decisions. A qualified school leader must review every recommendation before acting on it.
+- Structured-output explanations are plausibility-ranked reasoning from the supplied institutional context; they are not causal proof or a quantitative attribution model.
+- Recommendations are only as reliable as the approved school, curriculum, staffing, and outcome data provided to the system. Seed and proxy data must not be treated as pilot evidence.
+- Outputs may vary despite temperature controls and pinned model snapshots. Prompt versions and model snapshots are recorded so results can be traced and reviewed.
+- Learner-level personal data and sensitive learner decisions are out of scope. The product is designed for institution-level planning and governance.
+- Real-world deployment requires a school data-sharing agreement, role-based access controls, retention rules, and human review procedures appropriate to the institution.

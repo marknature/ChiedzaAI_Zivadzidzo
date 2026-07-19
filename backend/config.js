@@ -10,10 +10,8 @@ const TASK_TYPES = Object.freeze({
 // Pinned dated snapshots, not floating aliases, so an OpenAI-side model update can't
 // silently change prediction behaviour underneath a fixed prompt version.
 const OPENAI_MODELS = Object.freeze({
-  PREDICT: process.env.OPENAI_PREDICT_MODEL || 'gpt-4o-2024-08-06',
+  PREDICT: process.env.OPENAI_PREDICT_MODEL || 'gpt-4o-2024-11-20',
   CHAT: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini-2024-07-18',
-  // Demo-mode fallback used by the original curriculum auditor when no API key is set.
-  DEMO_FALLBACK_MODEL: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
 });
 
 // Bump the relevant tag any time a system prompt, schema, or few-shot example changes
@@ -59,7 +57,6 @@ const PREDICTION_WRITE_ROLES = [ROLES.ADMIN, ROLES.HEAD_TEACHER];
 const OPENAI_PRICING_PER_MILLION_TOKENS = Object.freeze({
   [OPENAI_MODELS.PREDICT]: { input: 2.5, output: 10 },
   [OPENAI_MODELS.CHAT]: { input: 0.15, output: 0.6 },
-  [OPENAI_MODELS.DEMO_FALLBACK_MODEL]: { input: 0.15, output: 0.6 },
 });
 
 const RATE_LIMITS = Object.freeze({

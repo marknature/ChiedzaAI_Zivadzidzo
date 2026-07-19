@@ -1,14 +1,13 @@
 const express = require('express');
 const { supabase, supabaseAdmin } = require('../db');
-const { ROLES } = require('../config');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Called once right after Supabase sign-in/sign-up. Verifies the token, then
-// provisions (or returns) the caller's profiles row. Uses the service-role client
-// deliberately: a brand-new user has no profiles row yet, so RLS on `profiles`/
-// `institutions` would otherwise block them from bootstrapping their own account.
+// Called once right after Supabase sign-in/sign-up. Institution membership and role
+// are assigned by a trusted administrator or invite flow, never by a self-service
+// "first school" fallback. That prevents a new account from silently joining the
+// wrong tenant or gaining a role through client-controlled profile fields.
 router.post('/session-sync', async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
@@ -34,29 +33,11 @@ router.post('/session-sync', async (req, res) => {
     return res.status(200).json({ success: true, profile: existingProfile, created: false });
   }
 
-  // Single-institution mode (Phase 0): every new profile joins the one seeded
-  // institution. The schema stays multi-tenant-ready; only this lookup is naive.
-  const { data: institution, error: institutionError } = await supabaseAdmin
-    .from('institutions')
-    .select('id')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (institutionError || !institution) {
-    return res.status(500).json({ success: false, error: 'No institution is configured yet. Run the seed script first.' });
-  }
-
-  const fullName = req.body?.fullName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'New teacher';
-  const { data: newProfile, error: insertError } = await supabaseAdmin
-    .from('profiles')
-    .insert([{ id: user.id, institution_id: institution.id, full_name: fullName, role: ROLES.TEACHER }])
-    .select('id, institution_id, role, full_name')
-    .single();
-  if (insertError) {
-    return res.status(500).json({ success: false, error: `Could not provision profile: ${insertError.message}` });
-  }
-
-  res.status(201).json({ success: true, profile: newProfile, created: true });
+  return res.status(403).json({
+    success: false,
+    error: 'Your account is awaiting assignment by an institution administrator.',
+    code: 'MEMBERSHIP_PENDING',
+  });
 });
 
 router.get('/me', requireAuth, (req, res) => res.json({ success: true, profile: req.profile }));

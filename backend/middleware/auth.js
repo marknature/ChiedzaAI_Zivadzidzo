@@ -1,4 +1,5 @@
 const { supabase } = require('../db');
+const supabaseService = require('../services/supabaseService');
 
 // Verifies the bearer token against Supabase (no manual JWKS handling needed - the
 // anon-key client can validate a user's own token via auth.getUser), then attaches the
@@ -15,7 +16,11 @@ async function requireAuth(req, res, next) {
     return res.status(401).json({ success: false, error: 'Invalid or expired session.' });
   }
 
-  const { data: profile, error: profileError } = await supabase
+  // Keep the profile lookup under the caller's JWT. Querying through the global
+  // anon client bypasses the authenticated RLS context and can make valid users
+  // look unprovisioned once profiles RLS is enabled.
+  const client = supabaseService.clientForToken(token);
+  const { data: profile, error: profileError } = await client
     .from('profiles')
     .select('id, institution_id, role, full_name')
     .eq('id', userData.user.id)
