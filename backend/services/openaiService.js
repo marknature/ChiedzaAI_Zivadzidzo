@@ -106,4 +106,27 @@ async function runStructuredPrediction({ schema, systemPrompt, userContent, mode
   };
 }
 
-module.exports = { runStructuredPrediction, estimateCostUsd, validate };
+// Free-form conversational call for the chat assistant (tool-calling, no JSON Schema
+// constraint) - deliberately separate from runStructuredPrediction, which stays focused on
+// the schema-constrained predict heads.
+async function runChatCompletion({ messages, tools, model = OPENAI_MODELS.CHAT, toolChoice = 'auto' }) {
+  const openai = getClient();
+  if (!openai) {
+    const error = new Error('OPENAI_API_KEY is not configured.');
+    error.code = 'OPENAI_NOT_CONFIGURED';
+    throw error;
+  }
+  try {
+    return await openai.chat.completions.create({
+      model,
+      messages,
+      ...(tools ? { tools, tool_choice: toolChoice } : {}),
+    });
+  } catch (error) {
+    const wrapped = new Error(`OpenAI request failed: ${error.message}`);
+    wrapped.code = 'OPENAI_REQUEST_FAILED';
+    throw wrapped;
+  }
+}
+
+module.exports = { runStructuredPrediction, runChatCompletion, estimateCostUsd, validate };

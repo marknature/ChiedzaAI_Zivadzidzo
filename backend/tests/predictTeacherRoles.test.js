@@ -1,4 +1,4 @@
-const { computeTeacherRolesEngineeredFeatures } = require('../routes/predict');
+const { computeTeacherRolesEngineeredFeatures } = require('../services/predictionService');
 const { runStructuredPrediction } = require('../services/openaiService');
 const { teacherRolesSchema, teacherRolesSystemPrompt } = require('../schemas/teacherRoles');
 

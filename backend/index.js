@@ -5,6 +5,7 @@ const { createAudit } = require('./auditService');
 const authRoutes = require('./routes/auth');
 const teachersRoutes = require('./routes/teachers');
 const predictRoutes = require('./routes/predict');
+const chatRoutes = require('./routes/chat');
 require('dotenv').config({ quiet: true });
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/teachers', teachersRoutes);
 app.use('/predict', predictRoutes);
+app.use('/chat', chatRoutes);
 
 // Base Route
 app.get('/', (req, res) => {

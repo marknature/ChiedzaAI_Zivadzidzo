@@ -58,8 +58,8 @@ async function listPredictions(client, institutionId, taskType, targetRefId) {
     .from(TABLES.PREDICTIONS)
     .select('*')
     .eq('institution_id', institutionId)
-    .eq('task_type', taskType)
     .order('created_at', { ascending: false });
+  if (taskType) query = query.eq('task_type', taskType);
   if (targetRefId) query = query.eq('target_ref_id', targetRefId);
   const { data, error } = await query;
   if (error) throw new Error(`Could not list predictions: ${error.message}`);
@@ -91,6 +91,45 @@ async function insertAutoLlmCostEntry({ institutionId, amountUsd, note, relatedP
   return data;
 }
 
+async function getLatestChatSession(client, institutionId, userId) {
+  const { data, error } = await client
+    .from(TABLES.CHAT_SESSIONS)
+    .select('id, title, created_at')
+    .eq('institution_id', institutionId)
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load chat session: ${error.message}`);
+  return data;
+}
+
+async function createChatSession(client, institutionId, userId, title) {
+  const { data, error } = await client
+    .from(TABLES.CHAT_SESSIONS)
+    .insert([{ institution_id: institutionId, created_by: userId, title: title || null }])
+    .select()
+    .single();
+  if (error) throw new Error(`Could not create chat session: ${error.message}`);
+  return data;
+}
+
+async function listChatMessages(client, sessionId) {
+  const { data, error } = await client
+    .from(TABLES.CHAT_MESSAGES)
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`Could not load chat messages: ${error.message}`);
+  return data;
+}
+
+async function insertChatMessage(client, message) {
+  const { data, error } = await client.from(TABLES.CHAT_MESSAGES).insert([message]).select().single();
+  if (error) throw new Error(`Could not save chat message: ${error.message}`);
+  return data;
+}
+
 module.exports = {
   clientForToken,
   listTeachers,
@@ -100,4 +139,8 @@ module.exports = {
   insertPrediction,
   listPredictions,
   insertAutoLlmCostEntry,
+  getLatestChatSession,
+  createChatSession,
+  listChatMessages,
+  insertChatMessage,
 };
