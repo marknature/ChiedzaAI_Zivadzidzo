@@ -72,10 +72,8 @@ router.get('/learning-outcomes', async (req, res) => {
   }
 });
 
-// Additive, not a replacement: the legacy POST /api/audit/analyze (backend/index.js) keeps
-// working exactly as before, writing to the `audits` table, so the already-shipped
-// CurriculumAuditScreen demo never regresses. This route is the new, properly-shaped
-// curriculum_skills predict head - writes to `predictions` like the other two heads.
+// The authenticated frontend uses this canonical curriculum_skills head. It persists
+// the same structured contract and model/prompt version as the other two heads.
 router.post('/curriculum-skills', requireRole(...PREDICTION_WRITE_ROLES), userPredictionLimiter, async (req, res) => {
   try {
     const client = supabaseService.clientForToken(req.authToken);

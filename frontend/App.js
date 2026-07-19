@@ -1,6 +1,6 @@
 import './global.css';
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { useFonts, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
@@ -12,12 +12,13 @@ import { apiFetch } from './src/lib/api';
 import { colors } from './src/theme/colors';
 import AuthScreen from './src/screens/AuthScreen';
 import RootNavigator from './src/navigation/RootNavigator';
+import Button from './src/components/common/Button';
+import { navigationRef } from './src/navigation/navigationRef';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:5000';
 
-// Provisions (or fetches) the caller's profiles row right after sign-in/sign-up.
-// See backend/routes/auth.js - this is the one call that must succeed before any
-// other authenticated route will accept the session.
+// Fetches the caller's trusted profile right after sign-in. Membership provisioning is
+// deliberately an administrator/invite workflow, so this call can return pending access.
 async function syncProfile(accessToken) {
   const response = await fetch(`${API_URL}/auth/session-sync`, {
     method: 'POST',
@@ -44,19 +45,23 @@ export default function App() {
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState(null);
 
   const hydrateFromSession = useCallback(async (nextSession) => {
     setSession(nextSession);
     if (!nextSession) {
       setProfile(null);
+      setProfileError(null);
       return;
     }
     try {
       const syncedProfile = await syncProfile(nextSession.access_token);
       setProfile(syncedProfile);
+      setProfileError(null);
     } catch (error) {
       console.warn('Profile sync failed:', error.message);
       setProfile(null);
+      setProfileError(error.message || 'Your account is awaiting assignment.');
     }
   }, []);
 
@@ -66,8 +71,8 @@ export default function App() {
       return null;
     }).catch(() => undefined);
     if (!isSupabaseConfigured) {
-      // Mirrors the backend's own demo-mode fallback: the curriculum-audit flow keeps
-      // working without any Supabase project configured, matching the pre-auth demo.
+      // Every workflow now uses authenticated, server-side decision support. Do not
+      // open a partial offline demo when the tenant/auth configuration is missing.
       setLoading(false);
       return undefined;
     }
@@ -87,6 +92,16 @@ export default function App() {
       subscription?.subscription?.unsubscribe();
     };
   }, [hydrateFromSession]);
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const destination = response.notification.request.content.data?.screen;
+      if (destination === 'Dashboard' && navigationRef.isReady()) {
+        navigationRef.navigate('Dashboard');
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (!profile || !isSupabaseConfigured) return;
@@ -114,13 +129,13 @@ export default function App() {
     );
   }
 
-  // No Supabase project configured: skip the auth gate entirely so the curriculum
-  // auditor (the working demo path) stays usable, same as the backend's own fallback.
+  // A missing public Supabase configuration is a setup state, not a reason to expose
+  // unauthenticated assessment UI. AuthScreen renders the actionable setup guidance.
   if (!isSupabaseConfigured) {
     return (
       <>
         <StatusBar style="light" />
-        <RootNavigator profile={null} userEmail={null} onSignOut={handleSignOut} />
+        <AuthScreen />
       </>
     );
   }
@@ -131,6 +146,23 @@ export default function App() {
         <StatusBar style="light" />
         <AuthScreen />
       </>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <View className="flex-1 bg-bg items-center justify-center px-6">
+        <StatusBar style="light" />
+        <View className="w-full max-w-md bg-surface border border-border rounded-3xl p-6">
+          <Text className="text-ink font-display text-xl text-center">Institution access pending</Text>
+          <Text className="text-ink-muted text-sm leading-relaxed text-center mt-3">
+            {profileError || 'Your account is awaiting assignment by an institution administrator.'}
+          </Text>
+          <Text className="text-ink-faint text-xs leading-relaxed text-center mt-3">A trusted administrator must assign your institution and role before school information can be opened.</Text>
+          <Button variant="secondary" className="mt-6" onPress={() => hydrateFromSession(session)}>Check again</Button>
+          <Button variant="danger" className="mt-3" onPress={handleSignOut}>Sign out</Button>
+        </View>
+      </View>
     );
   }
 

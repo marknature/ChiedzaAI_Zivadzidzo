@@ -11,12 +11,13 @@ import { View, Text } from 'react-native';
 // `caveats` is a required prop, not optional - it must always render, never be hidden
 // behind a modal/tooltip (product requirement, see prompt.md Phase 1 step 6).
 export default function ContributingFactorsLedger({ contributingFactors, caveats }) {
-  if (!contributingFactors?.length) return null;
+  const factors = Array.isArray(contributingFactors) ? contributingFactors : [];
 
   return (
     <View className="gap-4">
-      <View className="gap-3">
-        {contributingFactors.map((factor, index) => {
+      {!!factors.length && (
+        <View className="gap-3">
+          {factors.map((factor, index) => {
           const isIncreasesRisk = factor.direction === 'increases_risk';
           const pct = Math.max(0, Math.min(1, factor.relative_weight)) * 50;
           return (
@@ -39,14 +40,17 @@ export default function ContributingFactorsLedger({ contributingFactors, caveats
               )}
             </View>
           );
-        })}
-      </View>
+          })}
+        </View>
+      )}
+
+      {!factors.length && <Text className="text-ink-faint text-xs">No ranked contributing factors were returned for this assessment.</Text>}
 
       <View className="border-t border-border pt-3 bg-indigo/5 -mx-1 px-1 rounded-lg">
         <Text className="text-[11px] text-indigo font-body-semibold uppercase tracking-wide mb-1">
           How to read this
         </Text>
-        <Text className="text-[11px] text-ink-faint leading-relaxed">{caveats}</Text>
+        <Text className="text-[11px] text-ink-faint leading-relaxed">{caveats || 'This is LLM-reasoned decision support. Scores and contributing factors are associational, not causal proof.'}</Text>
       </View>
     </View>
   );

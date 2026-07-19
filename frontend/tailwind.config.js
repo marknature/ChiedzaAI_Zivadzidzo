@@ -15,8 +15,11 @@ module.exports = {
         ink: "#EDEFF5",
         "ink-muted": "#A8AFC2",
         "ink-faint": "#646C80",
-        gold: "#E8A33D",
+        // Legacy token name kept so existing moderate-risk cards do not break. The
+        // actual value is blue; orange is reserved for ChiedzaAI-only brand moments.
+        gold: "#38BDF8",
         teal: "#2FBF9F",
+        blue: "#38BDF8",
         red: "#E5484D",
         indigo: "#6C7CFF",
         violet: "#A881FF",

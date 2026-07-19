@@ -1,6 +1,6 @@
 const predictionService = require('./predictionService');
 const supabaseService = require('./supabaseService');
-const { TASK_TYPES } = require('../config');
+const { TASK_TYPES, PREDICTION_WRITE_ROLES } = require('../config');
 
 // OpenAI function-calling tool registry for the chat assistant. Each tool routes into the
 // SAME predictionService functions the HTTP predict routes use, so a prediction run via chat
@@ -105,21 +105,33 @@ const toolDefinitions = [
   },
 ];
 
+function assertLeadershipInsightAccess(profile) {
+  if (PREDICTION_WRITE_ROLES.includes(profile?.role)) return;
+  const error = new Error('Only institution administrators and head teachers can access roster-wide data or run assessments from chat.');
+  error.code = 'FORBIDDEN';
+  throw error;
+}
+
 async function executeTool(name, args, { client, profile }) {
   switch (name) {
     case 'fetch_roster':
+      assertLeadershipInsightAccess(profile);
       return supabaseService.listTeachers(client, profile.institution_id);
 
     case 'run_teacher_prediction':
+      assertLeadershipInsightAccess(profile);
       return predictionService.predictTeacherRoles({ client, profile, teacherId: args.teacherId });
 
     case 'run_learning_outcome_prediction':
+      assertLeadershipInsightAccess(profile);
       return predictionService.predictLearningOutcomes({ client, profile, ...args, rawBody: args });
 
     case 'run_curriculum_prediction':
+      assertLeadershipInsightAccess(profile);
       return predictionService.predictCurriculumSkills({ client, profile, ...args });
 
     case 'fetch_predictions_history': {
+      assertLeadershipInsightAccess(profile);
       const predictions = await supabaseService.listPredictions(client, profile.institution_id, args.taskType);
       const limit = Math.min(args.limit || 10, 20);
       return predictions.slice(0, limit);
@@ -130,4 +142,4 @@ async function executeTool(name, args, { client, profile }) {
   }
 }
 
-module.exports = { toolDefinitions, executeTool };
+module.exports = { toolDefinitions, executeTool, assertLeadershipInsightAccess };

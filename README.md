@@ -1,137 +1,141 @@
-# ZivaDzidzo (by ChiedzaAI)
+# ZivaDzidzo — education intelligence for school leaders
 
-> **"Forecasting tomorrow's skills to modernize today's classrooms."**
+ZivaDzidzo turns approved school-level context into practical curriculum, staff-readiness, and cohort-outcomes decision support for the OpenAI Build Week Education track.
 
-ZivaDzidzo is an interactive educational intelligence platform designed to transition school administrations, teachers, and policy-makers from a reactive stance to a proactive shield. Built for the **OpenAI Build Week Challenge (Education Track)**, the application audits existing school syllabi against emerging technological trends and turns curriculum-readiness gaps into explainable next actions.
+It is intentionally **LLM-native**: every assessment uses OpenAI Structured Outputs with a pinned model snapshot and a checked JSON schema. It does not train, serve, or claim a predictive machine-learning model.
 
-<br>
+## What is built
 
-![Logo](https://github.com/marknature/Dzidzo-EduTech_Zivadzidzo/blob/main/logo1.png "Logo")
+- A responsive Expo mobile/web workspace with five primary destinations: Dashboard, My School, Assess, Reports, and More.
+- An aggregate-only school-leader dashboard with readiness coverage, priority alerts, curriculum status, learning-outcomes trends, and recent activity.
+- Three structured assessment heads:
+  - Teacher Roles — AI-disruption exposure and reskilling priority from staff readiness signals.
+  - Learning Outcomes — cohort/subject-level pass-rate resilience; learner identifiers are rejected before any model call or persistence.
+  - Curriculum & Future Skills — a Skills Obsolescence & Readiness Index (SRI), with the final score independently calculated on the backend.
+- Department and subject hierarchy, guided roster-import preview, confirmation, validation feedback, and an atomic database import function.
+- Private DOCX/PDF reports with executive summary, evidence, chart, timestamp, model/prompt version, actions, and caveat.
+- Role-filtered priority notifications that deep-link to the aggregate Dashboard.
 
-<br>
+## Trust and data boundaries
 
-## 🚀 Key Features
+- Pinned dated snapshots are configured in [`backend/config.js`](backend/config.js): `gpt-4o-2024-11-20` for structured assessment and `gpt-4o-mini-2024-07-18` for chat.
+- Scores, confidence, caveats, and contributing factors are LLM-reasoned decision support—not causal proof, a trained model, or an automated decision.
+- ZivaDzidzo never accepts, stores, sends to OpenAI, or displays learner-level identifiers. Learning Outcomes accepts cohort aggregates only.
+- Supabase RLS scopes data to an institution. Profile roles and institution membership cannot be self-assigned through the client.
+- Service-role credentials are backend-only. Never place them in `frontend/.env`.
 
-1. **Curriculum Gap Auditor:** Paste a curriculum outline for structured OpenAI analysis, a Skills Obsolescence & Readiness Index, and actionable modernization recommendations.
-2. **Explainable Readiness Score:** Open each curriculum-area score to see its evidence, resilience signals, and the recommended next move.
-3. **Teacher Upskilling Co-Pilot:** Actionable pathways translating high-level industry and AI trends into daily, manageable classroom instructional tasks.
+See [`prompt.md`](prompt.md) for the canonical product/AI contract and [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md) for the current limitations.
 
-<br>
+## Architecture
 
-## 🛠️ Technology Stack
-
-ZivaDzidzo is engineered on a modular, enterprise-grade architecture:
-
-*   **Frontend Mobile/Web:** Built with React Native, Expo, and styled via NativeWind for a highly responsive dashboard experience.
-*   **Backend REST API:** Engineered with a Node.js and Express server hosting audit and decision-support endpoints.
-*   **Database & Storage:** Leverages Supabase (PostgreSQL) to handle structured relational schemas, user historical audits, and global automation vectors.
-*   **Intelligence Layer:** Powering deep semantic reasoning via the **OpenAI GPT-5.6 API** and utilizing **Codex** inside VS Code for rapid development.
-
-<br>
-
-## 📐 The Readiness Score
-
-To calculate curriculum alignment, ZivaDzidzo computes a proprietary **Skills Obsolescence & Readiness Index ($R$)** directly on the client side for real-time simulation updates:
-
-$$R = \sum_{i=1}^{n} w_i \cdot \left(1 - A_i\right) + \alpha \cdot F$$
-
-Where:
-* $w_i$ is the relative weight (importance) of subject $i$ within the current curriculum, satisfying $\sum w_i = 1$.
-* $A_i \in [0, 1]$ represents the **Automation Vulnerability Factor** of subject $i$ calculated via GPT-5.6 based on current technology trends.
-* $F \in [0, 1]$ represents the **Future Skills Integration Score** (presence of modern skills like critical thinking, AI collaboration, and system design).
-* $\alpha$ is a scaling sensitivity coefficient representing regional digital infrastructure readiness.
-
-<br>
-
-## 💻 Installation & Setup
-
-Ensure you have Node.js and the Expo CLI installed globally before proceeding.
-
-### 1. Clone the Repository
-```bash
-git clone [https://github.com/your-username/ziva-dzidzo.git](https://github.com/your-username/ziva-dzidzo.git)
-cd ziva-dzidzo
-
+```text
+Expo / React Native + NativeWind
+          │ bearer token
+          ▼
+Express API ── OpenAI Structured Outputs (pinned snapshots)
+   │       └─ independent SRI calculation
+   ▼
+Supabase Auth + Postgres + RLS + private report Storage
 ```
 
-### 2. Set Up the Backend
+## Local setup
 
-Navigate to the server directory, install dependencies, and configure your environment variables.
+### 1. Install dependencies
 
-```bash
+```powershell
 cd backend
 npm install
 
+cd ..\frontend
+npm install
 ```
 
-Create a `.env` file in the `backend` root:
+### 2. Configure the backend
+
+Copy [`backend/.env.example`](backend/.env.example) to `backend/.env` and set:
 
 ```env
-PORT=5000
-OPENAI_API_KEY=your_gpt_5.6_and_codex_api_key
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_anon_public_key
-
+OPENAI_API_KEY=your_backend_only_key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_backend_only_service_role_key
+CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081
 ```
 
-Start the local server:
+The backend fails closed if `OPENAI_API_KEY` is absent: it does not generate heuristic, mock, offline, or trained-model replacements.
 
-```bash
+### 3. Apply database migrations
+
+Run every file in [`backend/migrations`](backend/migrations) in numeric order in the Supabase SQL editor:
+
+```text
+0000_initial_audits.sql
+0001_core_platform.sql
+0002_phase3_phase4.sql
+0003_hardening_rls_storage.sql
+0004_audits_tenant_scope.sql
+0005_security_membership_and_chat.sql
+0006_atomic_roster_import.sql
+0007_report_access_hardening.sql
+```
+
+Then seed a synthetic demo institution:
+
+```powershell
+cd backend
+npm run seed
+```
+
+New accounts remain in **Institution access pending** until an authorized administrator assigns a profile. For a local demo, create the profile through the Supabase SQL editor or a trusted server-side workflow—never from the mobile client:
+
+```sql
+insert into public.profiles (id, institution_id, full_name, role)
+values ('AUTH_USER_UUID', 'INSTITUTION_UUID', 'Demo Admin', 'admin');
+```
+
+### 4. Configure and start the Expo app
+
+Copy `frontend/.env.example` to `frontend/.env`:
+
+```env
+EXPO_PUBLIC_API_URL=http://127.0.0.1:5000
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+Start both services:
+
+```powershell
+cd backend
 npm run dev
 
+cd ..\frontend
+npx expo start --web
 ```
 
-### 3. Set Up the Frontend
+For a physical device, set `EXPO_PUBLIC_API_URL` to the LAN address of the machine running the API and add that web origin to `CORS_ALLOWED_ORIGINS` for browser development.
 
-Navigate to the frontend directory, install dependencies, and start the Expo bundle.
+## Verification
 
-```bash
-cd ../frontend
-npm install
-npx expo start
+```powershell
+cd backend
+npm test -- --runInBand
 
+cd ..\frontend
+npx expo export --platform web
 ```
 
-### Live audit workflow
+The repository test suite covers structured schemas, formula boundaries, aggregate-only learner input, privacy rejection, school-dashboard aggregation/privacy, reports, roster parsing, notifications, and the LLM-only audit path.
 
-The judge-facing flow is ready: **paste syllabus → AI audit → SRI → explainable modernization actions**.
+## Demo flow
 
-1. Copy `backend/.env.example` to `backend/.env` and add `OPENAI_API_KEY`. Structured prediction routes intentionally return a configuration error until a backend-only key is present; ZivaDzidzo does not substitute heuristic or trained-model results.
-2. To persist history, run the SQL files in `backend/migrations/` (in order, `0000_...` then `0001_...`) in the Supabase SQL editor and add the Supabase credentials to `backend/.env`.
-3. When using a physical phone, point the Expo app at the computer running the API, for example: `EXPO_PUBLIC_API_URL=http://192.168.1.5:5000 npx expo start`. The default targets the local machine.
+1. Sign in as an institution administrator or head teacher.
+2. Open **Assess** and run a Curriculum & Future Skills assessment with a real syllabus.
+3. Run a Learning Outcomes assessment with subject/grade cohort aggregates only.
+4. Open **Dashboard** to show aggregate readiness, priority alerts, trends, and caveats.
+5. Use **My School** to preview and confirm a safe roster import.
+6. Export a DOCX or PDF report from **Reports**.
 
-`POST /api/audit/analyze` accepts `title`, `gradeLevel`, `syllabusText`, and optional `alpha`, returning the SRI, subject-level risk, rationale, and prioritized next actions.
+## Build-week framing
 
-### Full platform setup (institutions, auth, roster)
-
-Beyond the standalone audit demo above, the app is growing into the full ZivaDzidzo platform (see the build plan for the phased roadmap). To bring up the full schema and sign-in flow:
-
-1. Run **both** migration files in `backend/migrations/` against your Supabase project, in order.
-2. Add `SUPABASE_SERVICE_ROLE_KEY` to `backend/.env` (from your Supabase project's API settings — never commit this, never send it to the frontend).
-3. Seed one institution, 3 departments, 5 subjects, and ~15 teachers: `cd backend && npm run seed`.
-4. Copy `frontend/.env.example` to `frontend/.env` and set `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (the anon/public key only). Without these, the app skips the sign-in gate and only the Home (curriculum audit) tab is meaningfully usable.
-5. Start the backend and run `npx expo start` in `frontend/` — sign up a user from the in-app Auth screen; the backend auto-provisions their profile onto the seeded institution via `POST /auth/session-sync`.
-
-The app currently has 7 tabs: **Home** (curriculum audit, fully working), **Roster**, **My School**, **Chat**, **Reports**, **Cost**, and **Settings** (profile + sign out). Roster/My School/Chat/Reports/Cost are placeholders until their respective build phases land.
-
-> **Note:** `nativewind@2` requires `tailwindcss@3.3.x`. A newer `tailwindcss` (3.4+) will break the Metro bundle at `App.js` with `Use process(css).then(cb) to work with async plugins` — `frontend/package.json` pins `tailwindcss` to `3.3.2` deliberately; don't bump it without re-testing a full bundle.
-
-<br>
-
-## 🧠 Codex & GPT-5.6 Acceleration (Judging Showcase)
-
-A core requirement of our implementation was maximizing development velocity through agentic cooperation:
-
-* **Scaffolding & SQL Migrations:** Codex accelerated our database layer by generating our entire Supabase PostgreSQL database schema, relational foreign keys, and initial table structures based on simple English descriptions of our requirements.
-* **JSON Serialization & Parsing:** Running unstructured syllabi through GPT-5.6 requires highly reliable, predictable JSON formatting. Codex wrote the entire regex-based sanitation logic and Express middleware on the backend to parse model outputs cleanly under tight API deadlines.
-* **Dynamic Component Styling:** Codex handled the layout mechanics of our NativeWind layout configurations, giving us the ability to build an aesthetically balanced, dashboard-driven user interface in record time.
-
-<br>
-
-## 👥 Sharing and Testing Credentials
-
-The repository has been made accessible to the official hackathon testing accounts:
-
-* **Shared with:** `testing@devpost.com` & `build-week-event@openai.com`
-* **Codex Session ID for `/feedback` validation:** [Insert your active Codex Session ID here]
-* **Demo Instance Credentials:** Use `admin@chiedza.ai` / `Chiedza2026!` on the login prompt to bypass fresh registration screens.
+The memorable workflow is simple: **approved school context → strict structured AI analysis → independently calculated readiness → explainable leader actions → private executive report**.

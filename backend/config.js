@@ -66,6 +66,13 @@ const RATE_LIMITS = Object.freeze({
   MAX_PREDICT_PER_USER: 30,
 });
 
+const CORS_ALLOWED_ORIGINS = Object.freeze(
+  (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:8081,http://127.0.0.1:8081')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
+
 const AI_TOOL_USAGE_FREQUENCY_NUMERIC = Object.freeze({
   never: 0,
   rarely: 1,
@@ -84,5 +91,6 @@ module.exports = {
   PREDICTION_WRITE_ROLES,
   OPENAI_PRICING_PER_MILLION_TOKENS,
   RATE_LIMITS,
+  CORS_ALLOWED_ORIGINS,
   AI_TOOL_USAGE_FREQUENCY_NUMERIC,
 };

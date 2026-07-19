@@ -12,14 +12,23 @@ const reportsRoutes = require('./routes/reports');
 const notificationsRoutes = require('./routes/notifications');
 const { ipLimiter } = require('./middleware/security');
 const { requireAuth, requireRole } = require('./middleware/auth');
-const { PREDICTION_WRITE_ROLES, TABLES } = require('./config');
+const { PREDICTION_WRITE_ROLES, TABLES, CORS_ALLOWED_ORIGINS } = require('./config');
 require('dotenv').config({ quiet: true });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = new Set(CORS_ALLOWED_ORIGINS);
+app.use(cors({
+  origin(origin, callback) {
+    // Native clients and server-to-server calls do not send an Origin header. Browser
+    // calls must explicitly match the configured Expo/web deployment origins.
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Origin is not allowed by this API.'));
+  },
+  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+}));
 app.use(helmet());
 app.use(express.json());
 app.use(ipLimiter);
@@ -56,7 +65,8 @@ app.post('/api/audit/analyze', requireAuth, requireRole(...PREDICTION_WRITE_ROLE
       analysis: audit
     };
 
-    // Persistence is optional for the demo. A missing table or unconfigured project must not break analysis.
+    // This compatibility endpoint remains LLM-backed and tenant-scoped. Persistence
+    // failures are reported as `saved: false`; it never falls back to synthetic output.
     let saved = false;
     try {
       const client = supabaseService.clientForToken(req.authToken);

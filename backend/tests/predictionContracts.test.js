@@ -7,6 +7,7 @@ const {
   buildCurriculumUserContent,
 } = require('../services/curriculumService');
 const { toolDefinitions } = require('../services/chatTools');
+const { assertLeadershipInsightAccess } = require('../services/chatTools');
 
 test('Teacher Roles prompt includes role context but excludes teacher identifiers', () => {
   const prompt = buildTeacherRolesUserContent({
@@ -76,4 +77,9 @@ test('Chat tool contracts expose only strict aggregate contexts', () => {
   expect(curriculum.additionalProperties).toBe(false);
   expect(curriculum.properties.subjectTopicBreakdown.items.additionalProperties).toBe(false);
   expect(curriculum.properties.subjectTopicBreakdown.items.required).toEqual(['subject', 'topics']);
+});
+
+test('chat data tools cannot bypass assessment role gates', () => {
+  expect(() => assertLeadershipInsightAccess({ role: 'teacher' })).toThrow(/administrators and head teachers/i);
+  expect(() => assertLeadershipInsightAccess({ role: 'head_teacher' })).not.toThrow();
 });

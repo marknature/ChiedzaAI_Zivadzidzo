@@ -1,4 +1,4 @@
-const { reportContent, displayTimestamp } = require('../services/reportService');
+const { reportContent, displayTimestamp, buildDocx, buildPdf } = require('../services/reportService');
 
 test('prediction reports carry an executive summary, evidence, caveat, and reproducibility metadata', () => {
   const content = reportContent({
@@ -30,4 +30,24 @@ test('prediction reports carry an executive summary, evidence, caveat, and repro
 test('report timestamps are rendered in an unambiguous UTC format', () => {
   expect(displayTimestamp('2026-07-19T10:00:00.000Z')).toBe('2026-07-19 10:00:00 UTC');
   expect(displayTimestamp('not-a-date')).toBe('Not available');
+});
+
+test('Word and PDF exports include a renderable decision-support report', async () => {
+  const content = reportContent({
+    model_version: 'gpt-4o-2024-11-20::curriculum_skills_v1',
+    prediction: {
+      curriculum_readiness_score: 61,
+      readiness_band: 'moderate_risk',
+      recommended_actions: ['Add an applied AI-literacy project.'],
+    },
+    rationale: {
+      contributing_factors: [{ factor: 'Applied learning', relative_weight: 0.7, evidence: 'Assessment is primarily recall-based.' }],
+    },
+  }, 'Curriculum Skills prediction', '2026-07-19T10:00:00.000Z');
+
+  const [docx, pdf] = await Promise.all([buildDocx(content), buildPdf(content)]);
+  expect(Buffer.isBuffer(docx)).toBe(true);
+  expect(Buffer.isBuffer(pdf)).toBe(true);
+  expect(docx.length).toBeGreaterThan(1000);
+  expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
 });
