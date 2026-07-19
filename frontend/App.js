@@ -1,6 +1,6 @@
 import './global.css';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { ActivityIndicator, View, Text } from 'react-native';
+import { ActivityIndicator, Linking, Platform, View, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { useFonts, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
@@ -131,6 +131,23 @@ export default function App() {
       subscription?.subscription?.unsubscribe();
     };
   }, [hydrateFromSession]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || Platform.OS === 'web') return undefined;
+
+    const completeEmailRedirect = async (url) => {
+      const code = url?.match(/[?&]code=([^&#]+)/)?.[1];
+      if (!code) return;
+      const { error } = await supabase.auth.exchangeCodeForSession(decodeURIComponent(code));
+      if (error) console.warn('Email confirmation could not complete:', error.message);
+    };
+
+    void Linking.getInitialURL().then(completeEmailRedirect).catch(() => undefined);
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void completeEmailRedirect(url);
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {

@@ -25,6 +25,16 @@ const PROVIDER_LABELS = Object.freeze({
   [LLM_PROVIDERS.ANTHROPIC]: 'Anthropic',
 });
 
+const DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS = 30_000;
+
+function providerRequestTimeoutMs() {
+  const configured = Number.parseInt(process.env.LLM_REQUEST_TIMEOUT_MS, 10);
+  if (Number.isFinite(configured) && configured >= 1_000 && configured <= 120_000) {
+    return configured;
+  }
+  return DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS;
+}
+
 let cachedOpenaiClient = null;
 let cachedOpenaiApiKey = null;
 
@@ -173,15 +183,23 @@ async function postJson({ url, headers, body, provider }) {
     throw providerError('LLM_PROVIDER_REQUEST_FAILED', 'This Node runtime does not provide fetch for the selected LLM provider.', provider);
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), providerRequestTimeoutMs());
   let response;
   try {
     response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
-  } catch {
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw providerError('LLM_PROVIDER_REQUEST_TIMEOUT', `${PROVIDER_LABELS[provider]} did not respond in time. Please retry.`, provider);
+    }
     throw providerError('LLM_PROVIDER_REQUEST_FAILED', `${PROVIDER_LABELS[provider]} could not be reached.`, provider);
+  } finally {
+    clearTimeout(timeout);
   }
 
   let payload;

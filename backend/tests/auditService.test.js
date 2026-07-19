@@ -23,21 +23,21 @@ test('legacy audit remains an LLM-only structured assessment and calculates read
       summary: 'A balanced curriculum with room for more applied AI literacy.',
       recommendations: ['Add verification projects.', 'Use real datasets.'],
     },
-    modelUsed: 'gpt-4o-2024-11-20',
-    costUsd: 0.001,
+    modelUsed: 'gemini-3.5-flash',
+    costUsd: null,
   });
 
   const audit = await createAudit(input);
 
   expect(runStructuredPrediction).toHaveBeenCalledTimes(1);
-  expect(audit.analysisMode).toBe('openai');
-  expect(audit.modelVersion).toContain('gpt-4o-2024-11-20::curriculum_skills_v1');
+  expect(audit.analysisMode).toBe('gemini');
+  expect(audit.modelVersion).toContain('gemini-3.5-flash::curriculum_skills_v1');
   expect(audit.readinessIndex).toBe(65.6);
 });
 
-test('legacy audit does not substitute a heuristic result when OpenAI is unavailable', async () => {
-  const unavailable = Object.assign(new Error('OPENAI_API_KEY is not configured.'), { code: 'OPENAI_NOT_CONFIGURED' });
+test('legacy audit does not substitute a heuristic result when its selected provider is unavailable', async () => {
+  const unavailable = Object.assign(new Error('GEMINI_API_KEY is not configured.'), { code: 'LLM_PROVIDER_NOT_CONFIGURED' });
   runStructuredPrediction.mockRejectedValue(unavailable);
 
-  await expect(createAudit(input)).rejects.toMatchObject({ code: 'OPENAI_NOT_CONFIGURED' });
+  await expect(createAudit(input)).rejects.toMatchObject({ code: 'LLM_PROVIDER_NOT_CONFIGURED' });
 });

@@ -23,6 +23,13 @@ const INPUT_BORDER = '#D5E0DC';
 const LIGHT_INK = '#25272C';
 const LIGHT_MUTED = '#5A6964';
 
+function emailRedirectUrl() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/`;
+  }
+  return 'zivadzidzo://auth/callback';
+}
+
 const MODE_COPY = {
   sign_in: {
     eyebrow: 'Welcome back',
@@ -421,7 +428,10 @@ export default function AuthScreen({ initialMode = 'sign_in', onBack }) {
     setLoading(true);
     try {
       if (mode === 'magic_link') {
-        const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email.trim(),
+          options: { emailRedirectTo: emailRedirectUrl() },
+        });
         if (error) throw error;
         setFeedback({ tone: 'success', message: 'Check your work email for the secure sign-in link.' });
         return;
@@ -434,7 +444,11 @@ export default function AuthScreen({ initialMode = 'sign_in', onBack }) {
 
       const { error } =
         mode === 'sign_up'
-          ? await supabase.auth.signUp({ email: email.trim(), password })
+          ? await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: { emailRedirectTo: emailRedirectUrl() },
+          })
           : await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
       if (error) throw error;

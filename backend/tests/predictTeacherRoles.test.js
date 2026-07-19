@@ -47,9 +47,8 @@ test('nested student identifiers are detected before cohort prediction input rea
 // Prompt regression suite (prompt.md Phase 1, item 7): synthetic profiles across the
 // readiness spectrum, asserted against EXPECTED RANGES rather than exact values - LLM
 // output isn't deterministic enough for exact-match assertions even at temperature 0.
-// Skipped entirely when OPENAI_API_KEY isn't configured (e.g. local dev, CI without the
-// secret) rather than failing the build - this mirrors the demo-mode-friendly convention
-// already used elsewhere in this backend.
+// It is opt-in so local development and CI never spend provider quota unexpectedly.
+// When enabled, it uses whichever provider is deliberately selected in the backend.
 const SYNTHETIC_PROFILES = [
   { label: 'veteran, low digital skills, never uses AI, no training', years_experience: 22, training_hours: 0, digital_skills_score: 15, ai_tool_usage_frequency: 'never', expectedBands: ['high', 'critical'] },
   { label: 'new teacher, low digital skills, rarely uses AI, minimal training', years_experience: 1, training_hours: 2, digital_skills_score: 20, ai_tool_usage_frequency: 'rarely', expectedBands: ['high', 'critical'] },
@@ -65,7 +64,16 @@ const SYNTHETIC_PROFILES = [
   { label: 'mid-career, high digital skills, never uses AI (skills without adoption)', years_experience: 9, training_hours: 8, digital_skills_score: 80, ai_tool_usage_frequency: 'never', expectedBands: ['low', 'moderate', 'high'] },
 ];
 
-const describeIfConfigured = process.env.OPENAI_API_KEY ? describe : describe.skip;
+const { configuredLlmProvider } = require('../config');
+const PROVIDER_KEY_ENV = Object.freeze({
+  openai: 'OPENAI_API_KEY',
+  gemini: 'GEMINI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
+});
+const selectedProvider = configuredLlmProvider();
+const selectedProviderKey = PROVIDER_KEY_ENV[selectedProvider];
+const shouldRunLiveLlmTests = process.env.RUN_LIVE_LLM_TESTS === 'true' && Boolean(process.env[selectedProviderKey]);
+const describeIfConfigured = shouldRunLiveLlmTests ? describe : describe.skip;
 
 describeIfConfigured('teacher-roles predict head - prompt regression suite', () => {
   test.each(SYNTHETIC_PROFILES)('$label -> exposure_band within expected range', async (profile) => {
@@ -96,8 +104,8 @@ describeIfConfigured('teacher-roles predict head - prompt regression suite', () 
   }, 30000);
 });
 
-if (!process.env.OPENAI_API_KEY) {
-  test('prompt regression suite skipped (no OPENAI_API_KEY configured)', () => {
+if (!shouldRunLiveLlmTests) {
+  test('prompt regression suite skipped (set RUN_LIVE_LLM_TESTS=true with the selected provider key to run)', () => {
     expect(true).toBe(true);
   });
 }

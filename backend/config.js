@@ -7,7 +7,7 @@ const TASK_TYPES = Object.freeze({
   CURRICULUM_SKILLS: 'curriculum_skills',
 });
 
-// OpenAI is the production default. A backend operator may explicitly select one of
+// Gemini is the production default. A backend operator may explicitly select one of
 // the supported providers with LLM_PROVIDER; this is never chosen by a client request
 // and there is deliberately no automatic cross-provider failover.
 const LLM_PROVIDERS = Object.freeze({
@@ -29,23 +29,23 @@ function assertSupportedLlmProvider(value) {
 }
 
 function configuredLlmProvider() {
-  return assertSupportedLlmProvider(process.env.LLM_PROVIDER || LLM_PROVIDERS.OPENAI);
+  return assertSupportedLlmProvider(process.env.LLM_PROVIDER || LLM_PROVIDERS.GEMINI);
 }
 
-// Pinned dated OpenAI snapshots are kept as the default so an OpenAI-side update
-// cannot silently change production behaviour. Gemini and Claude defaults are
-// explicit and overrideable in the backend environment; their providers do not
-// expose equivalent dated snapshot semantics in the same way.
+// Gemini is the primary provider for ZivaDzidzo. Its stable Flash model is used for
+// both the schema-constrained assessment heads and the tool-enabled Assistant.
+// Operators can deliberately choose a pinned OpenAI snapshot or Anthropic model
+// instead; provider choice always remains backend-only.
 const OPENAI_MODELS = Object.freeze({
   PREDICT: process.env.OPENAI_PREDICT_MODEL || 'gpt-4o-2024-11-20',
   CHAT: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini-2024-07-18',
 });
 
 const GEMINI_MODELS = Object.freeze({
-  PREDICT: process.env.GEMINI_PREDICT_MODEL || 'gemini-2.5-flash',
+  PREDICT: process.env.GEMINI_PREDICT_MODEL || 'gemini-3.5-flash',
   // Kept separate from PREDICT so an operator can use a different model for the
   // tool-enabled Assistant without changing the three assessment heads.
-  CHAT: process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash',
+  CHAT: process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash',
 });
 
 const ANTHROPIC_MODELS = Object.freeze({

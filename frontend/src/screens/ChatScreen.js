@@ -63,6 +63,8 @@ export default function ChatScreen() {
   const scrollRef = useRef(null);
 
   const loadSession = useCallback(async () => {
+    setLoadingSession(true);
+    setError(null);
     try {
       const { session, messages: history } = await apiFetch('/chat/session');
       setSessionId(session.id);
@@ -83,7 +85,9 @@ export default function ChatScreen() {
   }, [loadSession]);
 
   const startNewChat = useCallback(async () => {
+    if (loadingSession || sending) return;
     setLoadingSession(true);
+    setError(null);
     try {
       const { session } = await apiFetch('/chat/session/new', { method: 'POST', body: JSON.stringify({}) });
       setSessionId(session.id);
@@ -94,11 +98,11 @@ export default function ChatScreen() {
     } finally {
       setLoadingSession(false);
     }
-  }, []);
+  }, [loadingSession, sending]);
 
   const sendMessage = useCallback(async (text) => {
     const trimmed = text.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sending || loadingSession) return;
     setError(null);
     setInput('');
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
@@ -117,10 +121,11 @@ export default function ChatScreen() {
       setSending(false);
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     }
-  }, [sessionId, sending]);
+  }, [loadingSession, sessionId, sending]);
 
   const exportChat = useCallback(async () => {
     if (!sessionId || exporting) return;
+    setError(null);
     setExporting(true);
     try { const result = await apiFetch(`/reports/chat/${sessionId}`, { method: 'POST', body: JSON.stringify({ format: 'pdf' }) }); await Linking.openURL(result.url); }
     catch (err) { setError(err.message); }
@@ -134,7 +139,7 @@ export default function ChatScreen() {
           <MessageCircle color={colors.teal} size={22} />
           <Text className="text-ink font-display text-lg ml-2">ZivaDzidzo Assistant</Text>
         </View>
-        <View className="flex-row gap-2"><Button variant="secondary" onPress={exportChat} disabled={!sessionId || exporting} className="px-3 py-2"><FileDown color={colors.ink} size={14} /></Button><Button variant="secondary" onPress={startNewChat} className="px-3 py-2"><Plus color={colors.ink} size={14} /><Text className="text-ink text-xs font-body-semibold">New chat</Text></Button></View>
+        <View className="flex-row gap-2"><Button variant="secondary" onPress={exportChat} disabled={!sessionId || exporting || loadingSession} className="px-3 py-2"><FileDown color={colors.ink} size={14} /></Button><Button variant="secondary" onPress={startNewChat} disabled={loadingSession || sending} className="px-3 py-2"><Plus color={colors.ink} size={14} /><Text className="text-ink text-xs font-body-semibold">New chat</Text></Button></View>
       </View>
 
       {loadingSession ? (
@@ -148,6 +153,16 @@ export default function ChatScreen() {
           className="flex-1 px-4 pt-4"
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
         >
+          {!!error && !sessionId && (
+            <View className="rounded-2xl border border-red p-4 mb-4" style={{ backgroundColor: colors.surface }}>
+              <Text className="text-red text-sm font-body-semibold">Could not load your chat.</Text>
+              <Text className="text-ink-muted text-xs mt-1">Check the backend connection, then try again.</Text>
+              <Button variant="secondary" onPress={loadSession} className="mt-3 self-start px-3 py-2">
+                <Text className="text-ink text-xs font-body-semibold">Try again</Text>
+              </Button>
+            </View>
+          )}
+
           {messages.length === 0 && (
             <View className="items-center mt-10 px-6">
               <MessageCircle color={colors.inkFaint} size={32} />
@@ -177,7 +192,7 @@ export default function ChatScreen() {
         </ScrollView>
       )}
 
-      {!!error && (
+      {!!error && !!sessionId && (
         <Text className="text-red text-xs px-4 pb-1">{error}</Text>
       )}
 
@@ -189,9 +204,9 @@ export default function ChatScreen() {
           value={input}
           onChangeText={setInput}
           multiline
-          editable={!sending}
+          editable={!sending && !loadingSession}
         />
-        <Button onPress={() => sendMessage(input)} disabled={sending || !input.trim()} className="px-4 py-3">
+        <Button onPress={() => sendMessage(input)} disabled={sending || loadingSession || !input.trim()} className="px-4 py-3">
           <Send color={colors.bg} size={18} />
         </Button>
       </View>

@@ -30,12 +30,12 @@ afterAll(() => {
   global.fetch = ORIGINAL_FETCH;
 });
 
-test('OpenAI is the default provider and persisted prediction metadata names provider and model', () => {
+test('Gemini is the default provider and persisted prediction metadata names provider and model', () => {
   delete process.env.LLM_PROVIDER;
   const { configuredLlmProvider, modelVersionTag, TASK_TYPES } = require('../config');
 
-  expect(configuredLlmProvider()).toBe('openai');
-  expect(modelVersionTag(TASK_TYPES.TEACHER_ROLES)).toContain('openai/gpt-4o-2024-11-20::teacher_roles_v1');
+  expect(configuredLlmProvider()).toBe('gemini');
+  expect(modelVersionTag(TASK_TYPES.TEACHER_ROLES)).toContain('gemini/gemini-3.5-flash::teacher_roles_v1');
 });
 
 test('an explicitly selected assessment provider is recorded in the prediction model version', () => {
@@ -82,6 +82,23 @@ test('Gemini structured assessments send a server-side JSON schema and retain lo
   expect(request.systemInstruction.parts[0].text).toBe('Return the score only.');
   expect(request.generationConfig).toMatchObject({ temperature: 0, responseMimeType: 'application/json' });
   expect(request.generationConfig.responseJsonSchema).toEqual(schema.schema);
+  expect(options.signal).toBeInstanceOf(AbortSignal);
+});
+
+test('Gemini provider requests expose a retryable timeout instead of hanging indefinitely', async () => {
+  process.env.LLM_PROVIDER = 'gemini';
+  process.env.GEMINI_API_KEY = 'gemini-unit-test-key';
+  global.fetch = jest.fn().mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+
+  const { runStructuredPrediction } = require('../services/llmProviderService');
+  await expect(runStructuredPrediction({
+    schema,
+    systemPrompt: 'Return the score only.',
+    userContent: 'Assess this aggregate.',
+  })).rejects.toMatchObject({
+    code: 'LLM_PROVIDER_REQUEST_TIMEOUT',
+    provider: 'gemini',
+  });
 });
 
 test('Anthropic structured assessments use output_config.format and report usage without a guessed cost', async () => {
