@@ -14,6 +14,12 @@ The model trains on `backend/raw/industry4_vocational_skill_mapping_dataset.csv`
 
 The unusually high readiness score may reflect a synthetic or strongly separable source dataset. It is evidence of fit to this benchmark—not evidence of real-world validity. A pilot with consented, aggregate Zimbabwean school data and drift testing is required before any operational claim.
 
+## Neural network and fusion experiment
+
+`industry4_neural_fusion_v1` follows the ZivaBasa pattern with a shared two-layer trunk and two heads: one softmax head for readiness class and one regression head for skill gap. Its model-fusion layer combines nearest-centroid, softmax-regression, and neural probabilities for readiness; it separately combines mean, linear, and neural estimates for skill gap, using validation-derived weights. It never combines different target types.
+
+The API selects its deployment candidate using validation metrics; the final held-out split is used only for reporting. In the latest run, nearest-centroid outperformed the fused readiness classifier (macro-F1 0.9969 vs 0.9951), and linear regression outperformed fused skill-gap regression (MAE 0.6674 vs 0.8621). The fusion weights and all scores are retained in the artifact so that this is an evidence-backed decision rather than an untested feature claim.
+
 ## Reproduce
 
 Use the bundled workspace Python runtime or an environment with NumPy:

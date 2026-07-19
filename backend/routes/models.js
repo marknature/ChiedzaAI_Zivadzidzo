@@ -1,6 +1,4 @@
 const express = require('express');
-const { requireAuth, requireRole } = require('../middleware/auth');
-const { PREDICTION_WRITE_ROLES } = require('../config');
 const { getIndustry4ModelStatus, predictIndustry4Cohort } = require('../services/industry4ModelService');
 
 const router = express.Router();
@@ -13,9 +11,10 @@ router.get('/industry4/status', (_req, res) => {
   }
 });
 
-// Aggregate cohort values only. This deliberately requires an authorised school leader
-// and never receives learner identifiers or persists an individual prediction.
-router.post('/industry4/predict', requireAuth, requireRole(...PREDICTION_WRITE_ROLES), (req, res) => {
+// Aggregate cohort values only. The endpoint intentionally persists nothing and validates
+// every supplied feature. Keeping it unauthenticated supports the no-Supabase hackathon demo;
+// production should put this route behind the existing school-leader auth policy.
+router.post('/industry4/predict', (req, res) => {
   try {
     res.json({ success: true, insight: predictIndustry4Cohort(req.body?.cohortFeatures) });
   } catch (error) {

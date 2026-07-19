@@ -1,6 +1,6 @@
 {
   "version": "industry4_numpy_v1",
-  "created_at": "2026-07-19T15:53:16.191090+00:00",
+  "created_at": "2026-07-19T16:27:54.753988+00:00",
   "dataset": "industry4_vocational_skill_mapping_dataset.csv",
   "rows": 15000,
   "features": [

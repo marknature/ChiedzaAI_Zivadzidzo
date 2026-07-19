@@ -34,6 +34,8 @@ export default function CurriculumAuditScreen() {
   const [analysisMode, setAnalysisMode] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [modelStatus, setModelStatus] = useState(null);
+  const [modelInsight, setModelInsight] = useState(null);
+  const [modelLoading, setModelLoading] = useState(false);
 
   const calculateLocalSRI = () => {
     let weightedNonVulnerability = 0;
@@ -56,6 +58,31 @@ export default function CurriculumAuditScreen() {
       .catch(() => {});
     return () => { active = false; };
   }, []);
+
+  const handleModelBenchmark = async () => {
+    // This is a transparent aggregate demonstration profile, not data about a real school.
+    const cohortFeatures = {
+      Theory_Score: 80, Assignment_Score: 82, Internal_Exam_Score: 78, Attendance_Percentage: 85,
+      LMS_Login_Count: 100, LMS_Time_Spent_Hours: 45, Lab_Task_Completion_Percentage: 83,
+      Lab_Accuracy_Score: 81, Practical_Exam_Score: 82, Simulation_Score: 79,
+      Troubleshooting_Score: 80, AI_Skill_Score: 75, IoT_Skill_Score: 74, Robotics_Skill_Score: 72,
+      Data_Analytics_Score: 76, Automation_Skill_Score: 75, Problem_Solving_Score: 80,
+      Teamwork_Score: 78, Communication_Score: 79,
+    };
+    setModelLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/models/industry4/predict`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cohortFeatures }),
+      });
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Benchmark unavailable.');
+      setModelInsight(payload.insight);
+    } catch (error) {
+      Alert.alert('Model benchmark unavailable', 'Start the ZivaDzidzo backend to run the aggregate benchmark.');
+    } finally {
+      setModelLoading(false);
+    }
+  };
 
   const handleAuditSubmission = async () => {
     if (!rawText.trim()) {
@@ -203,6 +230,17 @@ export default function CurriculumAuditScreen() {
               <Text className="text-ink-faint text-xs leading-relaxed mt-3">
                 External benchmark for aggregate curriculum planning—not an individual learner or school verdict.
               </Text>
+              <Button variant="secondary" className="mt-4 self-start" onPress={handleModelBenchmark} loading={modelLoading}>
+                <Text className="text-ink font-body-semibold text-xs">Run demo cohort benchmark</Text>
+              </Button>
+              {!!modelInsight && (
+                <View className="border-t border-teal/25 mt-4 pt-4">
+                  <Text className="text-teal font-body-semibold text-xs uppercase tracking-wide">Benchmark result</Text>
+                  <Text className="text-ink font-body-semibold text-base mt-1">{modelInsight.readinessLevel.replaceAll('_', ' ')}</Text>
+                  <Text className="text-ink-muted text-xs mt-1">Estimated skill-gap score: {modelInsight.predictedSkillGapScore}</Text>
+                  <Text className="text-ink-faint text-xs leading-relaxed mt-2">Signal: {modelInsight.contributingSignals?.[0]?.feature?.replaceAll('_', ' ')}</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
