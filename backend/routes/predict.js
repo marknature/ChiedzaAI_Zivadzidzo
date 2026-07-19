@@ -3,10 +3,11 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const supabaseService = require('../services/supabaseService');
 const predictionService = require('../services/predictionService');
 const { TASK_TYPES, PREDICTION_WRITE_ROLES } = require('../config');
-const { userPredictionLimiter } = require('../middleware/security');
+const { userRequestLimiter, userPredictionLimiter } = require('../middleware/security');
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(userRequestLimiter);
 
 function handlePredictionError(res, error, taskLabel) {
   if (error.code === 'OPENAI_NOT_CONFIGURED') {

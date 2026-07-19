@@ -4,6 +4,7 @@ const { teacherRolesSchema, teacherRolesSystemPrompt } = require('../schemas/tea
 const { learningOutcomesSchema, learningOutcomesSystemPrompt } = require('../schemas/learningOutcomes');
 const { runCurriculumSkillsPrediction: runCurriculumSkillsLLM } = require('./curriculumService');
 const { TASK_TYPES, AI_TOOL_USAGE_FREQUENCY_NUMERIC, modelVersionTag } = require('../config');
+const { notifyPriorityPrediction } = require('./notificationService');
 
 // Shared by the HTTP predict routes AND the chat assistant's tool-calls, so both paths
 // produce identical persisted rows/cost entries - one implementation of each predict head,
@@ -104,6 +105,7 @@ async function predictTeacherRoles({ client, profile, teacherId }) {
     relatedPredictionId: predictionRow.id,
     createdBy: profile.id,
   });
+  try { await notifyPriorityPrediction({ institutionId: profile.institution_id, prediction: predictionRow }); } catch (error) { console.warn('Priority notification was not sent:', error.message); }
 
   return predictionRow;
 }
@@ -172,6 +174,7 @@ async function predictLearningOutcomes({ client, profile, subjectName, gradeLeve
     relatedPredictionId: predictionRow.id,
     createdBy: profile.id,
   });
+  try { await notifyPriorityPrediction({ institutionId: profile.institution_id, prediction: predictionRow }); } catch (error) { console.warn('Priority notification was not sent:', error.message); }
 
   return predictionRow;
 }
@@ -211,6 +214,7 @@ async function predictCurriculumSkills({ client, profile, title = 'Untitled curr
     relatedPredictionId: predictionRow.id,
     createdBy: profile.id,
   });
+  try { await notifyPriorityPrediction({ institutionId: profile.institution_id, prediction: predictionRow }); } catch (error) { console.warn('Priority notification was not sent:', error.message); }
 
   return predictionRow;
 }

@@ -40,6 +40,7 @@ const TABLES = Object.freeze({
   CHAT_SESSIONS: 'chat_sessions',
   CHAT_MESSAGES: 'chat_messages',
   REPORTS: 'reports',
+  PUSH_TOKENS: 'push_tokens',
   COST_ENTRIES: 'cost_entries',
   AUDITS_LEGACY: 'audits',
 });
@@ -64,6 +65,7 @@ const OPENAI_PRICING_PER_MILLION_TOKENS = Object.freeze({
 const RATE_LIMITS = Object.freeze({
   WINDOW_MS: 15 * 60 * 1000,
   MAX_PER_IP: 300,
+  MAX_PER_USER: 180,
   MAX_PREDICT_PER_USER: 30,
 });
 

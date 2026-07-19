@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { MessageCircle, Send, Plus, Wrench } from 'lucide-react-native';
+import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Linking } from 'react-native';
+import { MessageCircle, Send, Plus, Wrench, FileDown } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import { apiFetch } from '../lib/api';
 import { colors } from '../theme/colors';
@@ -59,6 +59,7 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const scrollRef = useRef(null);
 
   const loadSession = useCallback(async () => {
@@ -118,6 +119,14 @@ export default function ChatScreen() {
     }
   }, [sessionId, sending]);
 
+  const exportChat = useCallback(async () => {
+    if (!sessionId || exporting) return;
+    setExporting(true);
+    try { const result = await apiFetch(`/reports/chat/${sessionId}`, { method: 'POST', body: JSON.stringify({ format: 'pdf' }) }); await Linking.openURL(result.url); }
+    catch (err) { setError(err.message); }
+    finally { setExporting(false); }
+  }, [sessionId, exporting]);
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-bg">
       <View className="pt-4 px-4 pb-3 flex-row items-center justify-between border-b border-border">
@@ -125,10 +134,7 @@ export default function ChatScreen() {
           <MessageCircle color={colors.teal} size={22} />
           <Text className="text-ink font-display text-lg ml-2">ZivaDzidzo Assistant</Text>
         </View>
-        <Button variant="secondary" onPress={startNewChat} className="px-3 py-2">
-          <Plus color={colors.ink} size={14} />
-          <Text className="text-ink text-xs font-body-semibold">New chat</Text>
-        </Button>
+        <View className="flex-row gap-2"><Button variant="secondary" onPress={exportChat} disabled={!sessionId || exporting} className="px-3 py-2"><FileDown color={colors.ink} size={14} /></Button><Button variant="secondary" onPress={startNewChat} className="px-3 py-2"><Plus color={colors.ink} size={14} /><Text className="text-ink text-xs font-body-semibold">New chat</Text></Button></View>
       </View>
 
       {loadingSession ? (

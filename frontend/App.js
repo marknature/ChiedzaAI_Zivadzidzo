@@ -8,6 +8,7 @@ import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } f
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
 import { supabase, isSupabaseConfigured } from './src/lib/supabaseClient';
+import { apiFetch } from './src/lib/api';
 import { colors } from './src/theme/colors';
 import AuthScreen from './src/screens/AuthScreen';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -86,6 +87,18 @@ export default function App() {
       subscription?.subscription?.unsubscribe();
     };
   }, [hydrateFromSession]);
+
+  useEffect(() => {
+    if (!profile || !isSupabaseConfigured) return;
+    Notifications.getPermissionsAsync()
+      .then(async ({ status }) => {
+        const permission = status === 'granted' ? status : (await Notifications.requestPermissionsAsync()).status;
+        if (permission !== 'granted') return null;
+        return Notifications.getExpoPushTokenAsync({ projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID });
+      })
+      .then((tokenResult) => tokenResult && apiFetch('/notifications/token', { method: 'POST', body: JSON.stringify({ expoPushToken: tokenResult.data }) }))
+      .catch((error) => console.warn('Push notifications are unavailable:', error.message));
+  }, [profile]);
 
   const handleSignOut = useCallback(async () => {
     if (!isSupabaseConfigured) return;

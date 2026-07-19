@@ -21,3 +21,11 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm test -- --runInBand
+      - name: Prove cross-institution RLS isolation
+        if: ${{ secrets.RLS_TEST_USER_A_TOKEN != '' && secrets.RLS_TEST_USER_B_INSTITUTION_ID != '' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          RLS_TEST_USER_A_TOKEN: ${{ secrets.RLS_TEST_USER_A_TOKEN }}
+          RLS_TEST_USER_B_INSTITUTION_ID: ${{ secrets.RLS_TEST_USER_B_INSTITUTION_ID }}
+        run: npm test -- --runInBand tests/rlsIsolation.test.js

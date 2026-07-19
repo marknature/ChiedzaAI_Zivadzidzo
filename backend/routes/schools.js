@@ -4,10 +4,12 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const supabaseService = require('../services/supabaseService');
 const { parseAndValidateRoster } = require('../services/importService');
 const { PREDICTION_WRITE_ROLES } = require('../config');
+const { userRequestLimiter } = require('../middleware/security');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 router.use(requireAuth);
+router.use(userRequestLimiter);
 
 router.get('/:id/structure', async (req, res) => {
   if (req.params.id !== req.profile.institution_id) return res.status(403).json({ success: false, error: 'You cannot access another institution.' });

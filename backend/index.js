@@ -9,6 +9,7 @@ const predictRoutes = require('./routes/predict');
 const chatRoutes = require('./routes/chat');
 const schoolsRoutes = require('./routes/schools');
 const reportsRoutes = require('./routes/reports');
+const notificationsRoutes = require('./routes/notifications');
 const { ipLimiter } = require('./middleware/security');
 require('dotenv').config({ quiet: true });
 
@@ -27,6 +28,7 @@ app.use('/predict', predictRoutes);
 app.use('/chat', chatRoutes);
 app.use('/schools', schoolsRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/notifications', notificationsRoutes);
 
 // Base Route
 app.get('/', (req, res) => {

@@ -2,9 +2,11 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const supabaseService = require('../services/supabaseService');
 const { AI_TOOL_USAGE_FREQUENCY_NUMERIC } = require('../config');
+const { userRequestLimiter } = require('../middleware/security');
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(userRequestLimiter);
 
 router.get('/', async (req, res) => {
   try {

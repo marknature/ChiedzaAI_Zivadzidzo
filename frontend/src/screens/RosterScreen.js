@@ -10,7 +10,6 @@ import EmptyState from '../components/common/EmptyState';
 import Skeleton from '../components/common/Skeleton';
 import ClarityRing from '../components/common/ClarityRing';
 import ContributingFactorsLedger from '../components/predict/ContributingFactorsLedger';
-import * as Notifications from 'expo-notifications';
 
 const BAND_TONE = { low: 'teal', moderate: 'gold', high: 'red', critical: 'red' };
 const PRIORITY_TONE = { low: 'teal', medium: 'gold', high: 'red', urgent: 'red' };
@@ -131,10 +130,6 @@ export default function RosterScreen() {
         body: JSON.stringify({ teacherId }),
       });
       setPredictionsById((prev) => ({ ...prev, [teacherId]: prediction }));
-      const result = prediction.prediction || {};
-      if (['critical', 'urgent'].includes(result.exposure_band) || ['critical', 'urgent'].includes(result.reskilling_priority)) {
-        await Notifications.scheduleNotificationAsync({ content: { title: 'Priority teacher support identified', body: `${teachers.find((teacher) => teacher.id === teacherId)?.full_name || 'A teacher'} has a ${result.exposure_band || result.reskilling_priority} priority assessment.`, sound: true }, trigger: null });
-      }
     } catch (error) {
       setAssessError((prev) => ({ ...prev, [teacherId]: error.message }));
     } finally {

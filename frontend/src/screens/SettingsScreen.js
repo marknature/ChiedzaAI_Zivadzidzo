@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import { Settings as SettingsIcon, LogOut, ShieldAlert } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import Card from '../components/common/Card';
@@ -27,6 +27,10 @@ export default function SettingsScreen({ profile, userEmail, onSignOut }) {
           explanation is self-reported, not a mechanistic decomposition. See KNOWN_LIMITATIONS.md.
         </Text>
       </View>
+
+      <Button variant="secondary" className="mb-4" onPress={() => Alert.alert('Known limitations', '• No trained model in v1: predictions are GPT-4o structured-output completions.\n\n• Explainability is self-reported by the LLM, not mechanistic proof.\n\n• Proxy/synthetic data only until a pilot agreement exists.\n\n• Determinism is best-effort.\n\n• Student-level data is out of scope by design.') }>
+        <Text className="text-ink font-body-semibold">Read known limitations</Text>
+      </Button>
 
       <Button variant="danger" onPress={onSignOut}>
         <LogOut color={colors.red} size={16} />

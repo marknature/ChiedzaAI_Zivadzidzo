@@ -4,9 +4,11 @@ const supabaseService = require('../services/supabaseService');
 const { runChatCompletion, estimateCostUsd } = require('../services/openaiService');
 const { toolDefinitions, executeTool } = require('../services/chatTools');
 const { OPENAI_MODELS } = require('../config');
+const { userRequestLimiter } = require('../middleware/security');
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(userRequestLimiter);
 
 const SYSTEM_PROMPT = `You are the ZivaDzidzo assistant, helping school leaders and teachers understand AI-driven \
 disruption to their curriculum, teacher roles, and learning outcomes. Call tools to look up the roster, run real \

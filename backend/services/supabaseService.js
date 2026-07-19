@@ -104,6 +104,12 @@ async function getLatestChatSession(client, institutionId, userId) {
   return data;
 }
 
+async function getChatSession(client, sessionId, institutionId) {
+  const { data, error } = await client.from(TABLES.CHAT_SESSIONS).select('id, institution_id, created_by, title, created_at').eq('id', sessionId).eq('institution_id', institutionId).maybeSingle();
+  if (error) throw new Error(`Could not load chat session: ${error.message}`);
+  return data;
+}
+
 async function createChatSession(client, institutionId, userId, title) {
   const { data, error } = await client
     .from(TABLES.CHAT_SESSIONS)
@@ -172,6 +178,18 @@ async function insertReport(client, report) {
   return data;
 }
 
+async function listReports(client, institutionId) {
+  const { data, error } = await client.from(TABLES.REPORTS).select('*').eq('institution_id', institutionId).order('created_at', { ascending: false });
+  if (error) throw new Error(`Could not load reports: ${error.message}`);
+  return data;
+}
+
+async function upsertPushToken(client, { institutionId, profileId, expoPushToken }) {
+  const { data, error } = await client.from(TABLES.PUSH_TOKENS).upsert({ institution_id: institutionId, profile_id: profileId, expo_push_token: expoPushToken }, { onConflict: 'expo_push_token' }).select().single();
+  if (error) throw new Error(`Could not save device notification token: ${error.message}`);
+  return data;
+}
+
 module.exports = {
   clientForToken,
   listTeachers,
@@ -182,10 +200,13 @@ module.exports = {
   listPredictions,
   insertAutoLlmCostEntry,
   getLatestChatSession,
+  getChatSession,
   createChatSession,
   listChatMessages,
   insertChatMessage,
   getSchoolStructure,
   importRosterRows,
   insertReport,
+  listReports,
+  upsertPushToken,
 };

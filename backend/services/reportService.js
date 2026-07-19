@@ -54,4 +54,10 @@ async function generateChatReport({ messages, institutionId, createdBy, format, 
   return uploadAndSign({ institutionId, createdBy, reportType: 'chat_report', baseName: `chat-${Date.now()}`, buffer, extension, client });
 }
 
-module.exports = { generatePredictionReport, generateChatReport };
+async function signedUrlForReport(storagePath) {
+  const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(storagePath, 15 * 60);
+  if (error) throw new Error(`Could not create report link: ${error.message}`);
+  return data.signedUrl;
+}
+
+module.exports = { generatePredictionReport, generateChatReport, signedUrlForReport };
