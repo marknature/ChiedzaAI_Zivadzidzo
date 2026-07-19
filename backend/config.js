@@ -43,10 +43,15 @@ const OPENAI_MODELS = Object.freeze({
 
 const GEMINI_MODELS = Object.freeze({
   PREDICT: process.env.GEMINI_PREDICT_MODEL || 'gemini-2.5-flash',
+  // Kept separate from PREDICT so an operator can use a different model for the
+  // tool-enabled Assistant without changing the three assessment heads.
+  CHAT: process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash',
 });
 
 const ANTHROPIC_MODELS = Object.freeze({
   PREDICT: process.env.ANTHROPIC_PREDICT_MODEL || 'claude-haiku-4-5-20251001',
+  // This is a low-latency default, not a claim that Anthropic API usage is free.
+  CHAT: process.env.ANTHROPIC_CHAT_MODEL || 'claude-haiku-4-5-20251001',
 });
 
 function predictionModelFor(provider = configuredLlmProvider()) {
@@ -58,13 +63,13 @@ function predictionModelFor(provider = configuredLlmProvider()) {
 }
 
 function chatModelFor(provider = configuredLlmProvider()) {
-  // Tool-enabled chat is currently implemented only for OpenAI. This helper still
-  // returns the selected provider's configured model for clear diagnostics/report
-  // metadata; the capability gate lives in the provider service.
+  // All supported providers have an adapter for ZivaDzidzo's normalized
+  // tool-enabled chat contract. Provider choice remains backend-only and is never
+  // silently changed or failed over by this helper.
   assertSupportedLlmProvider(provider);
   if (provider === LLM_PROVIDERS.OPENAI) return process.env.OPENAI_CHAT_MODEL || OPENAI_MODELS.CHAT;
-  if (provider === LLM_PROVIDERS.GEMINI) return process.env.GEMINI_CHAT_MODEL || GEMINI_MODELS.PREDICT;
-  if (provider === LLM_PROVIDERS.ANTHROPIC) return process.env.ANTHROPIC_CHAT_MODEL || ANTHROPIC_MODELS.PREDICT;
+  if (provider === LLM_PROVIDERS.GEMINI) return process.env.GEMINI_CHAT_MODEL || GEMINI_MODELS.CHAT;
+  if (provider === LLM_PROVIDERS.ANTHROPIC) return process.env.ANTHROPIC_CHAT_MODEL || ANTHROPIC_MODELS.CHAT;
   throw new Error(`No chat model configured for provider "${provider}".`);
 }
 

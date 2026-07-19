@@ -24,8 +24,8 @@ const MAX_TOOL_RESULT_CHARS = 8000;
 // Every tool_calls value we persist has one of two shapes depending on role:
 //   assistant row that requested tools: the normalized OpenAI-compatible tool_calls array
 //   tool row (the result): { tool_call_id, name }
-// The current tool-enabled chat protocol is intentionally OpenAI-only; the provider
-// layer returns a clear capability error rather than silently dropping tool calls.
+// Provider adapters normalize Gemini and Anthropic calls into this durable internal
+// shape too, so the route can safely execute the same server-side tool contract.
 function toOpenAIMessage(row) {
   if (row.role === 'assistant' && Array.isArray(row.tool_calls) && row.tool_calls.length) {
     return { role: 'assistant', content: row.content || null, tool_calls: row.tool_calls };

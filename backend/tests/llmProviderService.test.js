@@ -155,10 +155,10 @@ test('provider output is rejected if it violates the same strict schema contract
     .rejects.toThrow(/unexpected field/i);
 });
 
-test('tool-enabled chat reports a capability error instead of silently dropping tools for optional providers', async () => {
+test('tool-enabled chat fails closed when a selected optional provider has no backend key', async () => {
   process.env.LLM_PROVIDER = 'anthropic';
   const { runChatCompletion } = require('../services/llmProviderService');
 
   await expect(runChatCompletion({ messages: [{ role: 'user', content: 'Hello' }], tools: [] }))
-    .rejects.toMatchObject({ code: 'LLM_PROVIDER_CAPABILITY_UNSUPPORTED' });
+    .rejects.toMatchObject({ code: 'LLM_PROVIDER_NOT_CONFIGURED', provider: 'anthropic' });
 });
