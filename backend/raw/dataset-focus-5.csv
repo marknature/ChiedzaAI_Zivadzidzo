@@ -1,0 +1,6 @@
+Dataset,Focus,Why It’s Useful for ZivaDzidzo
+Industry 4.0 Skill Mapping Dataset,"15,000 vocational learners, with scores on theory, labs, simulations, troubleshooting, and readiness levels","Directly aligns with your goal of forecasting future skills. It provides structured indicators of readiness across categories (Basic → Advanced), perfect for modeling skill gaps against syllabi."
+Performance Trends in Education (Student Performance Factors),"Lifestyle, study habits, parental education, school climate, demographics",Helps simulate how non-curricular factors influence readiness. Useful for building dashboards that show how socio-economic and behavioral trends affect future skill acquisition.
+Education Performance Analytics Dataset,Large-scale student performance data (20 MB),Provides baseline analytics for comparing current syllabi outcomes with projected skill needs. Can be used to benchmark Zimbabwean or regional school data against global patterns.
+India Education & EdTech Industry Dataset,"EdTech adoption, industry trends",Provides a contextual source for policy-maker dashboards predicting readiness for AI-driven classrooms.
+Global AI Usage & Productivity Dataset,AI adoption trends worldwide,Helps forecast which AI-related skills should be embedded into curricula now to prepare students for tomorrow’s workforce.

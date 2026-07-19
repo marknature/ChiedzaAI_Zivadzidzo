@@ -10,6 +10,7 @@ const chatRoutes = require('./routes/chat');
 const schoolsRoutes = require('./routes/schools');
 const reportsRoutes = require('./routes/reports');
 const notificationsRoutes = require('./routes/notifications');
+const modelRoutes = require('./routes/models');
 const { ipLimiter } = require('./middleware/security');
 const { requireAuth, requireRole } = require('./middleware/auth');
 const { PREDICTION_WRITE_ROLES, TABLES } = require('./config');
@@ -31,6 +32,7 @@ app.use('/chat', chatRoutes);
 app.use('/schools', schoolsRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/notifications', notificationsRoutes);
+app.use('/models', modelRoutes);
 
 // Base Route
 app.get('/', (req, res) => {

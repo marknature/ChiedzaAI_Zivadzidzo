@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View, ScrollView, TextInput, Alert, Modal, Pressable, useWindowDimensions, StyleSheet } from 'react-native';
-import { Shield, GraduationCap, Sparkles, CheckCircle2, AlertTriangle, CircleHelp, X, ChevronRight } from 'lucide-react-native';
+import { Shield, GraduationCap, Sparkles, CheckCircle2, AlertTriangle, CircleHelp, X, ChevronRight, BrainCircuit } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
@@ -33,6 +33,7 @@ export default function CurriculumAuditScreen() {
   const [recommendations, setRecommendations] = useState([]);
   const [analysisMode, setAnalysisMode] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [modelStatus, setModelStatus] = useState(null);
 
   const calculateLocalSRI = () => {
     let weightedNonVulnerability = 0;
@@ -44,6 +45,17 @@ export default function CurriculumAuditScreen() {
     const computed = (weightedNonVulnerability + alpha * (futureSkillsScore / 100)) * 100;
     setSriScore(parseFloat(computed.toFixed(1)));
   };
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_URL}/models/industry4/status`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (active && payload?.success) setModelStatus(payload.model);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const handleAuditSubmission = async () => {
     if (!rawText.trim()) {
@@ -173,6 +185,29 @@ export default function CurriculumAuditScreen() {
       </Card>
       </View>
 
+      {!!modelStatus && (
+        <View className="bg-teal/10 border border-teal/25 rounded-2xl p-5 mb-6">
+          <View className="flex-row items-start">
+            <View className="w-9 h-9 rounded-xl bg-teal/20 items-center justify-center mr-3">
+              <BrainCircuit color={colors.teal} size={19} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-ink font-body-semibold">Model evidence</Text>
+              <Text className="text-ink-muted text-xs leading-relaxed mt-1">
+                Industry 4.0 readiness benchmark · {modelStatus.trainedRows?.toLocaleString()} training records
+              </Text>
+              <View className="flex-row flex-wrap mt-3" style={styles.metricRow}>
+                <Badge tone="teal">F1 {((modelStatus.readinessMetrics?.macro_f1 || 0) * 100).toFixed(1)}%</Badge>
+                <Badge tone="indigo">Gap MAE {modelStatus.skillGapMetrics?.mae ?? '—'}</Badge>
+              </View>
+              <Text className="text-ink-faint text-xs leading-relaxed mt-3">
+                External benchmark for aggregate curriculum planning—not an individual learner or school verdict.
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {!!analysisMode && (
         <View className="bg-indigo/10 border border-indigo/25 rounded-2xl p-5 mb-6">
           <View className="flex-row items-center mb-2">
@@ -273,4 +308,5 @@ const styles = StyleSheet.create({
   riskGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   sheet: { width: '100%' },
   sheetWide: { width: 620, alignSelf: 'center', borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  metricRow: { gap: 8 },
 });

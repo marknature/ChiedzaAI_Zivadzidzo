@@ -54,6 +54,18 @@ cd ziva-dzidzo
 
 ```
 
+### Model R&D layer
+
+The existing OpenAI/SRI audit remains the primary user workflow. An additive, privacy-bounded Industry 4.0 benchmark model lives under [`backend/notebooks/`](backend/notebooks/): it compares baseline and lightweight tabular models, exports a transparent JSON artifact, and is surfaced through `GET /models/industry4/status`.
+
+```bash
+cd backend/notebooks
+python train_numpy_portfolio.py
+python smoke_numpy.py
+```
+
+See [`backend/notebooks/MODEL_CARD.md`](backend/notebooks/MODEL_CARD.md) for measured results, data limitations, and the aggregate-only deployment boundary.
+
 ### 2. Set Up the Backend
 
 Navigate to the server directory, install dependencies, and configure your environment variables.
