@@ -22,6 +22,7 @@
         "backgroundColor": "#25272C"
       },
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": ["POST_NOTIFICATIONS"]
     },
     "web": {
