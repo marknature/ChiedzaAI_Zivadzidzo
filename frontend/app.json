@@ -23,7 +23,11 @@
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
-      "permissions": ["POST_NOTIFICATIONS"]
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "POST_NOTIFICATIONS"
+      ],
+      "package": "com.mcnature.zivadzidzo"
     },
     "web": {
       "favicon": "./assets/favicon.png"
