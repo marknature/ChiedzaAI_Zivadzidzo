@@ -10,6 +10,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowRight,
   BarChart3,
@@ -116,6 +117,7 @@ function MockDashboard({ isCompact }) {
 
 export default function LandingScreen({ onOpenAuth }) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isWide = width >= 900;
   const isTablet = width >= 620 && width < 900;
   const isCompact = width < 390;
@@ -179,7 +181,7 @@ export default function LandingScreen({ onOpenAuth }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.page, isWide && styles.pageWide, isCompact && styles.pageCompact]}>
+        <View style={[styles.page, isWide && styles.pageWide, isCompact && styles.pageCompact, { paddingTop: (isWide ? styles.pageWide.paddingTop : isCompact ? styles.pageCompact.paddingTop : styles.page.paddingTop) + insets.top }]}>
           <Animated.View style={[styles.header, isNarrowHeader && styles.headerNarrow, { opacity: heroOpacity, transform: [{ translateY: heroTranslateY }] }]}>
             <View style={styles.brandRow}>
               <View style={styles.brandMark}>
@@ -190,11 +192,13 @@ export default function LandingScreen({ onOpenAuth }) {
                 <Text style={styles.brandDescriptor}>CHIEDZAAI · EDUCATION INTELLIGENCE</Text>
               </View>
             </View>
-            <View style={[styles.headerActions, isNarrowHeader && styles.headerActionsNarrow]}>
-              {isWide && <Text style={styles.headerLabel}>For school leaders</Text>}
-              <ActionButton compact variant="quiet" onPress={() => onOpenAuth('sign_in')}>Sign in</ActionButton>
-              <ActionButton compact onPress={() => onOpenAuth('sign_up')}>Create account</ActionButton>
-            </View>
+            {!isNarrowHeader && (
+              <View style={styles.headerActions}>
+                {isWide && <Text style={styles.headerLabel}>For school leaders</Text>}
+                <ActionButton compact variant="quiet" onPress={() => onOpenAuth('sign_in')}>Sign in</ActionButton>
+                <ActionButton compact onPress={() => onOpenAuth('sign_up')}>Create account</ActionButton>
+              </View>
+            )}
           </Animated.View>
 
           <Animated.View style={[styles.hero, isWide && styles.heroWide, { opacity: heroOpacity, transform: [{ translateY: heroTranslateY }] }]}>

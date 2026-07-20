@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ArrowLeft, GraduationCap, Lock, Mail, ShieldCheck, Sparkles } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { colors } from '../theme/colors';
 
@@ -274,6 +275,7 @@ function ConfigurationNotice() {
 }
 
 function AuthShell({ children, intro, formTransition, isWide, isTablet, isCompact, mode, onModeChange, changingMode, canChangeMode = true, onBack }) {
+  const insets = useSafeAreaInsets();
   const entranceTranslateY = intro.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
   const entranceScale = intro.interpolate({ inputRange: [0, 1], outputRange: [0.985, 1] });
   const formTranslateX = formTransition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
@@ -289,7 +291,12 @@ function AuthShell({ children, intro, formTransition, isWide, isTablet, isCompac
             accessibilityLabel="Back to ZivaDzidzo overview"
             onPress={onBack}
             hitSlop={8}
-            style={({ pressed }) => [styles.backButton, isWide && styles.backButtonWide, pressed && styles.backButtonPressed]}
+            style={({ pressed }) => [
+              styles.backButton,
+              { top: styles.backButton.top + insets.top },
+              isWide && [styles.backButtonWide, { top: styles.backButtonWide.top + insets.top }],
+              pressed && styles.backButtonPressed,
+            ]}
           >
             <ArrowLeft color={LIGHT_SURFACE} size={17} strokeWidth={2.3} />
             <Text style={styles.backButtonText}>Overview</Text>
@@ -299,7 +306,7 @@ function AuthShell({ children, intro, formTransition, isWide, isTablet, isCompac
           contentContainerStyle={[
             styles.scrollContent,
             isWide ? styles.scrollContentWide : styles.scrollContentNarrow,
-            onBack && !isWide && styles.scrollContentNarrowWithBack,
+            onBack && !isWide && [styles.scrollContentNarrowWithBack, { paddingTop: styles.scrollContentNarrowWithBack.paddingTop + insets.top }],
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}

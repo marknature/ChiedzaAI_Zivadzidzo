@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Users, ChevronDown, ChevronUp, Zap } from 'lucide-react-native';
 import { apiFetch } from '../lib/api';
 import { colors } from '../theme/colors';
@@ -91,6 +91,8 @@ function TeacherRow({ teacher, isOpen, onToggle, prediction, loading, error, onR
 }
 
 export default function RosterScreen() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 760;
   const [teachers, setTeachers] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState(null);
@@ -139,56 +141,63 @@ export default function RosterScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-bg pt-4 px-4"
+      className="flex-1 bg-bg"
+      contentContainerStyle={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.teal} />}
     >
-      <View className="mb-6 flex-row items-center justify-between">
-        <View>
-          <Text className="text-ink-muted text-xs tracking-widest uppercase">Teacher Readiness</Text>
-          <Text className="text-ink font-display text-2xl">Roster</Text>
+      <View style={[styles.page, isWide && styles.pageWide]}>
+        <View className="mb-6 flex-row items-center justify-between">
+          <View>
+            <Text className="text-ink-muted text-xs tracking-widest uppercase">Teacher Readiness</Text>
+            <Text className="text-ink font-display text-2xl">Roster</Text>
+          </View>
+          <Users color={colors.teal} size={28} />
         </View>
-        <Users color={colors.teal} size={28} />
+
+        {loadingList && (
+          <View className="gap-3">
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+          </View>
+        )}
+
+        {!loadingList && !!listError && (
+          <EmptyState
+            icon={Users}
+            title="Could not load the roster"
+            description={listError}
+            action={<Button variant="secondary" className="mt-2" onPress={loadTeachers}>Retry</Button>}
+          />
+        )}
+
+        {!loadingList && !listError && teachers.length === 0 && (
+          <EmptyState
+            icon={Users}
+            title="No teachers yet"
+            description="Run the backend seed script to populate a demo roster, or add teachers via the API."
+          />
+        )}
+
+        {!loadingList && !listError && teachers.map((teacher) => (
+          <TeacherRow
+            key={teacher.id}
+            teacher={teacher}
+            isOpen={openId === teacher.id}
+            onToggle={() => setOpenId(openId === teacher.id ? null : teacher.id)}
+            prediction={predictionsById[teacher.id]}
+            loading={!!assessing[teacher.id]}
+            error={assessError[teacher.id]}
+            onRunAssessment={() => runAssessment(teacher.id)}
+          />
+        ))}
       </View>
-
-      {loadingList && (
-        <View className="gap-3">
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
-        </View>
-      )}
-
-      {!loadingList && !!listError && (
-        <EmptyState
-          icon={Users}
-          title="Could not load the roster"
-          description={listError}
-          action={<Button variant="secondary" className="mt-2" onPress={loadTeachers}>Retry</Button>}
-        />
-      )}
-
-      {!loadingList && !listError && teachers.length === 0 && (
-        <EmptyState
-          icon={Users}
-          title="No teachers yet"
-          description="Run the backend seed script to populate a demo roster, or add teachers via the API."
-        />
-      )}
-
-      {!loadingList && !listError && teachers.map((teacher) => (
-        <TeacherRow
-          key={teacher.id}
-          teacher={teacher}
-          isOpen={openId === teacher.id}
-          onToggle={() => setOpenId(openId === teacher.id ? null : teacher.id)}
-          prediction={predictionsById[teacher.id]}
-          loading={!!assessing[teacher.id]}
-          error={assessError[teacher.id]}
-          onRunAssessment={() => runAssessment(teacher.id)}
-        />
-      ))}
-
-      <View className="h-8" />
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
+  page: { width: '100%', alignSelf: 'center' },
+  pageWide: { maxWidth: 1120 },
+});

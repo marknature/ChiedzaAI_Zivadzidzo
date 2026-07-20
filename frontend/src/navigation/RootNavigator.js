@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
@@ -8,6 +9,7 @@ import {
   ClipboardCheck,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   MessageCircle,
   Settings as SettingsIcon,
@@ -56,64 +58,78 @@ function MoreScreen({ profile, userEmail, onSignOut }) {
 
   if (activeScreen === 'roster') {
     return (
-      <View className="flex-1 bg-bg">
-        <Pressable className="flex-row items-center px-5 py-3 border-b border-border" onPress={() => setActiveScreen(null)}>
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <Pressable className="flex-row items-center px-5 py-4 border-b border-border" onPress={() => setActiveScreen(null)}>
           <ArrowLeft color={colors.inkMuted} size={18} />
           <Text className="text-ink-muted text-sm font-body-semibold ml-2">Back to More</Text>
         </Pressable>
         <RosterScreen />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (activeScreen === 'assistant') {
     return (
-      <View className="flex-1 bg-bg">
-        <Pressable className="flex-row items-center px-5 py-3 border-b border-border" onPress={() => setActiveScreen(null)}>
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <Pressable className="flex-row items-center px-5 py-4 border-b border-border" onPress={() => setActiveScreen(null)}>
           <ArrowLeft color={colors.inkMuted} size={18} />
           <Text className="text-ink-muted text-sm font-body-semibold ml-2">Back to More</Text>
         </Pressable>
         <ChatScreen />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (activeScreen === 'settings') {
     return (
-      <View className="flex-1 bg-bg">
-        <Pressable className="flex-row items-center px-5 py-3 border-b border-border" onPress={() => setActiveScreen(null)}>
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <Pressable className="flex-row items-center px-5 py-4 border-b border-border" onPress={() => setActiveScreen(null)}>
           <ArrowLeft color={colors.inkMuted} size={18} />
           <Text className="text-ink-muted text-sm font-body-semibold ml-2">Back to More</Text>
         </Pressable>
-        <SettingsScreen profile={profile} userEmail={userEmail} onSignOut={onSignOut} />
-      </View>
+        <SettingsScreen profile={profile} userEmail={userEmail} />
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg px-5 pt-8" contentContainerStyle={{ paddingBottom: 36 }}>
-      <Text className="text-ink-muted text-xs uppercase tracking-widest">ZivaDzidzo workspace</Text>
-      <Text className="text-ink font-display text-2xl mt-1">More tools</Text>
-      <Text className="text-ink-muted text-sm leading-relaxed mt-2 mb-6">Supporting workflows stay close at hand without crowding the primary school-leader journey.</Text>
-      {options.map(({ id, label, description, Icon }) => (
+    <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+      <ScrollView className="flex-1 bg-bg px-5 pt-8" contentContainerStyle={{ paddingBottom: 36 }}>
+        <Text className="text-ink-muted text-xs uppercase tracking-widest">ZivaDzidzo workspace</Text>
+        <Text className="text-ink font-display text-2xl mt-1">More tools</Text>
+        <Text className="text-ink-muted text-sm leading-relaxed mt-2 mb-6">Supporting workflows stay close at hand without crowding the primary school-leader journey.</Text>
+        {options.map(({ id, label, description, Icon }) => (
+          <Pressable
+            key={id}
+            className="flex-row items-center bg-surface border border-border rounded-2xl p-4 mb-3"
+            onPress={() => setActiveScreen(id)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+          >
+            <View className="w-10 h-10 rounded-xl bg-indigo/10 items-center justify-center mr-3">
+              <Icon color={colors.indigo} size={19} />
+            </View>
+            <View className="flex-1 pr-3">
+              <Text className="text-ink font-body-semibold">{label}</Text>
+              <Text className="text-ink-muted text-xs leading-relaxed mt-1">{description}</Text>
+            </View>
+            <ChevronRight color={colors.inkFaint} size={18} />
+          </Pressable>
+        ))}
+
         <Pressable
-          key={id}
-          className="flex-row items-center bg-surface border border-border rounded-2xl p-4 mb-3"
-          onPress={() => setActiveScreen(id)}
+          className="flex-row items-center bg-red/10 border border-red/25 rounded-2xl p-4 mt-2"
+          onPress={onSignOut}
           accessibilityRole="button"
-          accessibilityLabel={label}
+          accessibilityLabel="Sign out"
         >
-          <View className="w-10 h-10 rounded-xl bg-indigo/10 items-center justify-center mr-3">
-            <Icon color={colors.indigo} size={19} />
+          <View className="w-10 h-10 rounded-xl bg-red/10 items-center justify-center mr-3">
+            <LogOut color={colors.red} size={19} />
           </View>
-          <View className="flex-1 pr-3">
-            <Text className="text-ink font-body-semibold">{label}</Text>
-            <Text className="text-ink-muted text-xs leading-relaxed mt-1">{description}</Text>
-          </View>
-          <ChevronRight color={colors.inkFaint} size={18} />
+          <Text className="text-red font-body-semibold flex-1">Sign out</Text>
         </Pressable>
-      ))}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -124,10 +140,16 @@ export default function RootNavigator({ profile, userEmail, onSignOut }) {
   return (
     <NavigationContainer theme={NavTheme} ref={navigationRef}>
       <Tab.Navigator
+        sceneContainerStyle={{ backgroundColor: colors.bg }}
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarShowLabel: true,
           tabBarLabelPosition: 'below-icon',
+          // bottom-tabs defaults to a translucent/blurred background on iOS (and can
+          // leave the surrounding container unstyled on web), which reads as a white
+          // nav bar against this app's dark theme. A solid tabBarBackground forces the
+          // real theme color everywhere instead of relying on tabBarStyle alone.
+          tabBarBackground: () => <View style={{ flex: 1, backgroundColor: colors.bg }} />,
           tabBarStyle: {
             backgroundColor: colors.bg,
             borderTopColor: colors.border,

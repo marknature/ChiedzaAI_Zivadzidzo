@@ -5,3 +5,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tailwind's preflight resets margin but never sets a background, so the browser's
+   default white shows through anywhere the RN root doesn't fully cover the viewport
+   (e.g. a centered/narrower nav bar on wide screens). Match the app's graphite theme
+   at the page level so no white ever bleeds around the mounted app on web. */
+html, body, #root {
+  height: 100%;
+  background-color: #25272C;
+}

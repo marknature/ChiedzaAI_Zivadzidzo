@@ -1,6 +1,7 @@
 import './global.css';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ActivityIndicator, Linking, Platform, View, Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { useFonts, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
@@ -31,6 +32,9 @@ async function syncProfile(accessToken) {
       signal: controller.signal,
     });
     const result = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error('Your secure session expired. Please sign in again.');
+    }
     if (!response.ok || result.success === false) {
       throw new Error(result.error || `Could not sync session (${response.status}).`);
     }
@@ -49,7 +53,12 @@ async function syncProfile(accessToken) {
 }
 
 export default function App() {
-  useFonts({
+  // The result was previously discarded, so the UI rendered immediately with
+  // fallback system fonts and then abruptly swapped to the custom fonts whenever
+  // the (network-fetched, first-run) download finished a few seconds later. That
+  // swap relayouts every Text/TextInput on screen, which is a known trigger for
+  // Android to silently dismiss a focused TextInput's keyboard mid-typing.
+  const [fontsLoaded] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
     Inter_400Regular,
@@ -80,8 +89,32 @@ export default function App() {
     setProfileError(null);
     setProfileSyncing(true);
     try {
-      const syncedProfile = await syncProfile(nextSession.access_token);
+      let activeSession = nextSession;
+      let syncedProfile;
+      try {
+        syncedProfile = await syncProfile(activeSession.access_token);
+      } catch (error) {
+        // A recovered browser tab can hold an access token that has just expired.
+        // Refresh once through Supabase before treating the session as invalid.
+        if (!/session expired/i.test(error.message || '')) throw error;
+        const { data, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !data?.session) {
+          // Clear only this browser/device session. A failed refresh cannot become
+          // valid through repeated retries, and leaving it in storage traps the
+          // user on the dashboard-unavailable card instead of returning to login.
+          await supabase.auth.signOut({ scope: 'local' });
+          if (hydrationId !== profileHydrationId.current) return;
+          setSession(null);
+          setProfile(null);
+          setProfileError(null);
+          setProfileSyncing(false);
+          return;
+        }
+        activeSession = data.session;
+        syncedProfile = await syncProfile(activeSession.access_token);
+      }
       if (hydrationId !== profileHydrationId.current) return;
+      setSession(activeSession);
       setProfile(syncedProfile);
       setProfileError(null);
       setProfileSyncing(false);
@@ -104,10 +137,13 @@ export default function App() {
     supabase.auth.getSession()
       .then(({ data }) => {
         if (!isMounted || receivedAuthEvent) return;
-        // Do not block the public landing page on local session recovery or the
-        // backend profile request. A recovered session transitions into the private
-        // workspace as soon as the trusted profile arrives.
-        void hydrateFromSession(data.session);
+        // Every cold start lands on the public Landing page, even when a valid
+        // session was persisted from a previous visit — a cached session is
+        // discarded rather than silently re-entering the private dashboard.
+        // Explicit sign-in (below, via onAuthStateChange) still hydrates normally.
+        if (data.session) {
+          void supabase.auth.signOut({ scope: 'local' });
+        }
       })
       .catch((error) => {
         if (!isMounted) return;
@@ -187,23 +223,36 @@ export default function App() {
     <LandingScreen onOpenAuth={openAuthentication} />
   );
 
+  // Hold the splash state until fonts are ready so nothing mounts, gets tapped, and
+  // then relayouts underneath the user once the download finishes (see useFonts above).
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaProvider>
+        <View className="flex-1 bg-bg items-center justify-center">
+          <StatusBar style="light" />
+          <ActivityIndicator color="#18C3A6" size="large" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
   // A missing public Supabase configuration is a setup state, not a reason to expose
   // unauthenticated assessment UI. AuthScreen renders the actionable setup guidance.
   if (!isSupabaseConfigured) {
     return (
-      <>
+      <SafeAreaProvider>
         <StatusBar style="light" />
         {publicScreen}
-      </>
+      </SafeAreaProvider>
     );
   }
 
   if (!session) {
     return (
-      <>
+      <SafeAreaProvider>
         <StatusBar style="light" />
         {publicScreen}
-      </>
+      </SafeAreaProvider>
     );
   }
 
@@ -216,39 +265,41 @@ export default function App() {
       ? 'Verifying your institution access securely.'
       : (profileError || 'Your account is awaiting assignment by an institution administrator.');
     return (
-      <View className="flex-1 bg-bg items-center justify-center px-6">
-        <StatusBar style="light" />
-        <View className="w-full max-w-md bg-surface border border-border rounded-3xl p-6">
-          {profileSyncing && (
-            <View className="items-center mb-4">
-              <ActivityIndicator color="#18C3A6" size="small" />
-            </View>
-          )}
-          <Text className="text-ink font-display text-xl text-center">{title}</Text>
-          <Text className="text-ink-muted text-sm leading-relaxed text-center mt-3">
-            {description}
-          </Text>
-          {!profileSyncing && (
-            <>
-              <Text className="text-ink-faint text-xs leading-relaxed text-center mt-3">
-                {membershipPending
-                  ? 'A trusted administrator must assign your institution and role before school information can be opened.'
-                  : 'Check that the ZivaDzidzo backend is running, then try again.'}
-              </Text>
-              <Button variant="secondary" className="mt-6" onPress={() => hydrateFromSession(session)}>Check again</Button>
-              <Button variant="danger" className="mt-3" onPress={handleSignOut}>Sign out</Button>
-            </>
-          )}
+      <SafeAreaProvider>
+        <View className="flex-1 bg-bg items-center justify-center px-6">
+          <StatusBar style="light" />
+          <View className="w-full max-w-md bg-surface border border-border rounded-3xl p-6">
+            {profileSyncing && (
+              <View className="items-center mb-4">
+                <ActivityIndicator color="#18C3A6" size="small" />
+              </View>
+            )}
+            <Text className="text-ink font-display text-xl text-center">{title}</Text>
+            <Text className="text-ink-muted text-sm leading-relaxed text-center mt-3">
+              {description}
+            </Text>
+            {!profileSyncing && (
+              <>
+                <Text className="text-ink-faint text-xs leading-relaxed text-center mt-3">
+                  {membershipPending
+                    ? 'A trusted administrator must assign your institution and role before school information can be opened.'
+                    : 'Check that the ZivaDzidzo backend is running, then try again.'}
+                </Text>
+                <Button variant="secondary" className="mt-6" onPress={() => hydrateFromSession(session)}>Check again</Button>
+                <Button variant="danger" className="mt-3" onPress={handleSignOut}>Sign out</Button>
+              </>
+            )}
+          </View>
         </View>
-      </View>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="light" />
       <RootNavigator profile={profile} userEmail={session.user?.email} onSignOut={handleSignOut} />
-    </>
+    </SafeAreaProvider>
   );
 }
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
