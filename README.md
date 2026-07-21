@@ -175,6 +175,6 @@ The repository test suite covers structured schemas, formula boundaries, aggrega
 5. Use **My School** to preview and confirm a safe roster import.
 6. Export a DOCX or PDF report from **Reports**.
 
-## Build-week framing
+## Build-week framing(OpenAI)
 
 The memorable workflow is simple: **approved school context → strict structured AI analysis → independently calculated readiness → explainable leader actions → private executive report**.
